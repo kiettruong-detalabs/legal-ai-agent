@@ -893,7 +893,7 @@
 
     <script>
         const API_URL = window.location.origin;
-        let authToken = localStorage.getItem('auth_token');
+        let authToken = localStorage.getItem('token');
 
         // Check auth
         if (!authToken) {
@@ -914,7 +914,7 @@
 
             if (response.status === 401) {
                 alert('Session expired. Please login again.');
-                localStorage.removeItem('auth_token');
+                localStorage.removeItem('token');
                 window.location.href = '/static/app.html';
                 return;
             }

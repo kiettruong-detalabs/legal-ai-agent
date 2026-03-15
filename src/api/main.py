@@ -6,7 +6,9 @@ Legal AI Agent API
 """
 from fastapi import FastAPI, HTTPException, Depends, Header, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
+import pathlib
 from pydantic import BaseModel, Field
 from typing import Optional, List
 import psycopg2
@@ -31,6 +33,18 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Static files
+static_dir = pathlib.Path(__file__).parent.parent.parent / "static"
+if static_dir.exists():
+    app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+
+@app.get("/", include_in_schema=False)
+async def landing_page():
+    html_file = static_dir / "index.html"
+    if html_file.exists():
+        return FileResponse(str(html_file))
+    return {"name": "Legal AI Agent API", "version": "1.0.0"}
 
 # ============================================
 # Database
@@ -174,20 +188,7 @@ def search_laws(query: str, domains: Optional[List[str]] = None, limit: int = 10
 # API Endpoints
 # ============================================
 
-@app.get("/")
-async def root():
-    return {
-        "name": "Legal AI Agent API",
-        "version": "1.0.0",
-        "description": "AI-powered Vietnamese Legal Assistant",
-        "endpoints": {
-            "POST /v1/legal/ask": "Tư vấn pháp luật",
-            "POST /v1/legal/review": "Rà soát hợp đồng",
-            "POST /v1/legal/draft": "Soạn thảo văn bản",
-            "GET /v1/legal/search": "Tìm kiếm luật",
-            "GET /v1/health": "Health check"
-        }
-    }
+# Root endpoint moved to landing page above
 
 @app.get("/v1/health")
 async def health():

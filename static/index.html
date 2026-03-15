@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Legal AI Agent — Trợ lý Pháp luật AI cho Doanh nghiệp Việt Nam</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; color: #1a1a2e; background: #fff; }
+        
+        /* Hero */
+        .hero { 
+            min-height: 90vh; display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            color: white; text-align: center; padding: 2rem;
+        }
+        .hero h1 { font-size: clamp(2rem, 5vw, 3.5rem); margin-bottom: 1rem; font-weight: 800; }
+        .hero h1 span { background: linear-gradient(90deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .hero p { font-size: 1.25rem; opacity: 0.9; max-width: 600px; margin: 0 auto 2rem; line-height: 1.6; }
+        .hero .stats { display: flex; gap: 2rem; justify-content: center; margin-top: 2rem; flex-wrap: wrap; }
+        .hero .stat { text-align: center; }
+        .hero .stat .number { font-size: 2.5rem; font-weight: 800; background: linear-gradient(90deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .hero .stat .label { font-size: 0.9rem; opacity: 0.7; }
+        
+        .btn { 
+            display: inline-block; padding: 14px 36px; border-radius: 8px; font-size: 1.1rem; 
+            font-weight: 600; text-decoration: none; transition: all 0.3s;
+        }
+        .btn-primary { background: linear-gradient(90deg, #667eea, #764ba2); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(102,126,234,0.4); }
+        .btn-outline { border: 2px solid rgba(255,255,255,0.3); color: white; margin-left: 1rem; }
+        .btn-outline:hover { border-color: white; }
+        
+        /* Features */
+        .features { padding: 5rem 2rem; max-width: 1200px; margin: 0 auto; }
+        .features h2 { text-align: center; font-size: 2rem; margin-bottom: 3rem; }
+        .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; }
+        .feature { padding: 2rem; border-radius: 12px; border: 1px solid #e8e8e8; transition: all 0.3s; }
+        .feature:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.08); }
+        .feature .icon { font-size: 2.5rem; margin-bottom: 1rem; }
+        .feature h3 { font-size: 1.3rem; margin-bottom: 0.5rem; }
+        .feature p { color: #666; line-height: 1.6; }
+        
+        /* API Demo */
+        .demo { padding: 5rem 2rem; background: #f8f9ff; }
+        .demo-container { max-width: 900px; margin: 0 auto; }
+        .demo h2 { text-align: center; font-size: 2rem; margin-bottom: 2rem; }
+        .code-block { 
+            background: #1a1a2e; color: #e8e8e8; padding: 2rem; border-radius: 12px; 
+            overflow-x: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; line-height: 1.8;
+        }
+        .code-block .comment { color: #6b7280; }
+        .code-block .string { color: #a5d6ff; }
+        .code-block .keyword { color: #ff7b72; }
+        
+        /* Pricing */
+        .pricing { padding: 5rem 2rem; max-width: 1200px; margin: 0 auto; }
+        .pricing h2 { text-align: center; font-size: 2rem; margin-bottom: 3rem; }
+        .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; }
+        .plan { padding: 2rem; border-radius: 12px; border: 2px solid #e8e8e8; text-align: center; }
+        .plan.featured { border-color: #667eea; position: relative; }
+        .plan.featured::before { content: 'PHỔ BIẾN'; position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: #667eea; color: white; padding: 4px 16px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
+        .plan h3 { font-size: 1.4rem; margin-bottom: 0.5rem; }
+        .plan .price { font-size: 2.5rem; font-weight: 800; margin: 1rem 0; }
+        .plan .price span { font-size: 1rem; font-weight: 400; color: #666; }
+        .plan ul { list-style: none; text-align: left; margin: 1.5rem 0; }
+        .plan ul li { padding: 0.5rem 0; border-bottom: 1px solid #f0f0f0; }
+        .plan ul li::before { content: '✅ '; }
+        
+        /* Footer */
+        footer { background: #1a1a2e; color: white; padding: 3rem 2rem; text-align: center; }
+        footer a { color: #667eea; text-decoration: none; }
+        
+        /* Chat Widget */
+        .chat-widget {
+            position: fixed; bottom: 20px; right: 20px; z-index: 1000;
+        }
+        .chat-btn {
+            width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(90deg, #667eea, #764ba2);
+            border: none; color: white; font-size: 1.5rem; cursor: pointer; box-shadow: 0 4px 20px rgba(102,126,234,0.4);
+            transition: all 0.3s;
+        }
+        .chat-btn:hover { transform: scale(1.1); }
+        .chat-box {
+            display: none; position: absolute; bottom: 70px; right: 0; width: 380px; height: 500px;
+            background: white; border-radius: 16px; box-shadow: 0 8px 40px rgba(0,0,0,0.15);
+            overflow: hidden; flex-direction: column;
+        }
+        .chat-box.open { display: flex; }
+        .chat-header { background: linear-gradient(90deg, #667eea, #764ba2); color: white; padding: 1rem; font-weight: 600; }
+        .chat-messages { flex: 1; overflow-y: auto; padding: 1rem; }
+        .chat-input { display: flex; border-top: 1px solid #e8e8e8; }
+        .chat-input input { flex: 1; border: none; padding: 1rem; font-size: 1rem; outline: none; }
+        .chat-input button { background: #667eea; color: white; border: none; padding: 0 1.5rem; cursor: pointer; font-weight: 600; }
+        .msg { margin-bottom: 1rem; }
+        .msg.bot { background: #f0f2ff; padding: 0.75rem 1rem; border-radius: 12px 12px 12px 0; max-width: 85%; }
+        .msg.user { background: #667eea; color: white; padding: 0.75rem 1rem; border-radius: 12px 12px 0 12px; max-width: 85%; margin-left: auto; }
+    </style>
+</head>
+<body>
+    <!-- Hero -->
+    <section class="hero">
+        <div>
+            <h1>🏛️ <span>Legal AI Agent</span></h1>
+            <h1>Trợ lý Pháp luật AI cho Doanh nghiệp</h1>
+            <p>Tư vấn pháp luật, soạn thảo văn bản, rà soát hợp đồng — tất cả qua một API. Thay thế bộ phận pháp lý truyền thống với chi phí thấp hơn 10 lần.</p>
+            <div>
+                <a href="#pricing" class="btn btn-primary">Dùng thử miễn phí</a>
+                <a href="#demo" class="btn btn-outline">Xem API Docs</a>
+            </div>
+            <div class="stats">
+                <div class="stat">
+                    <div class="number">35,000+</div>
+                    <div class="label">Văn bản pháp luật</div>
+                </div>
+                <div class="stat">
+                    <div class="number">92,000+</div>
+                    <div class="label">Điều khoản đã index</div>
+                </div>
+                <div class="stat">
+                    <div class="number">&lt;1s</div>
+                    <div class="label">Thời gian tìm kiếm</div>
+                </div>
+                <div class="stat">
+                    <div class="number">24/7</div>
+                    <div class="label">Hoạt động liên tục</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section class="features" id="features">
+        <h2>Tại sao chọn Legal AI Agent?</h2>
+        <div class="feature-grid">
+            <div class="feature">
+                <div class="icon">💬</div>
+                <h3>Tư vấn Pháp luật</h3>
+                <p>Hỏi bất kỳ câu hỏi pháp luật nào — nhận câu trả lời chính xác với trích dẫn Điều, Khoản cụ thể từ Luật, Nghị định, Thông tư.</p>
+            </div>
+            <div class="feature">
+                <div class="icon">📄</div>
+                <h3>Soạn thảo Văn bản</h3>
+                <p>Tạo hợp đồng lao động, quyết định, công văn, nội quy — đúng format, đúng pháp luật, trong vài giây.</p>
+            </div>
+            <div class="feature">
+                <div class="icon">🔍</div>
+                <h3>Rà soát Hợp đồng</h3>
+                <p>Upload hợp đồng → nhận báo cáo rủi ro, điều khoản vi phạm, và đề xuất sửa đổi với căn cứ pháp lý.</p>
+            </div>
+            <div class="feature">
+                <div class="icon">⚡</div>
+                <h3>API Cloud</h3>
+                <p>Tích hợp vào ERP, HRM, CRM của bạn qua REST API. Không cần cài đặt, không cần máy chủ.</p>
+            </div>
+            <div class="feature">
+                <div class="icon">🏢</div>
+                <h3>Multi-tenant</h3>
+                <p>Mỗi công ty có không gian riêng biệt. Dữ liệu nội bộ không bao giờ bị chia sẻ.</p>
+            </div>
+            <div class="feature">
+                <div class="icon">📊</div>
+                <h3>Batch Processing</h3>
+                <p>Tạo 500 hợp đồng lao động từ file Excel trong 10 phút. Xử lý hàng loạt văn bản doanh nghiệp.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- API Demo -->
+    <section class="demo" id="demo">
+        <div class="demo-container">
+            <h2>Tích hợp trong 5 phút</h2>
+            <div class="code-block">
+<span class="comment"># Tư vấn pháp luật</span>
+<span class="keyword">curl</span> -X POST https://api.legalagent.vn/v1/legal/ask \
+  -H <span class="string">"X-API-Key: lak_your_api_key"</span> \
+  -H <span class="string">"Content-Type: application/json"</span> \
+  -d '{
+    <span class="string">"question"</span>: <span class="string">"Thời hạn tối đa của HĐLĐ có thời hạn?"</span>,
+    <span class="string">"domains"</span>: [<span class="string">"lao_dong"</span>]
+  }'
+
+<span class="comment"># Response</span>
+{
+  <span class="string">"answer"</span>: <span class="string">"Theo Điều 20 Bộ luật Lao động 2019..."</span>,
+  <span class="string">"citations"</span>: [{<span class="string">"source"</span>: <span class="string">"BLLĐ 2019"</span>, <span class="string">"article"</span>: <span class="string">"Điều 20"</span>}],
+  <span class="string">"confidence"</span>: 0.92
+}
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing -->
+    <section class="pricing" id="pricing">
+        <h2>Bảng giá</h2>
+        <div class="pricing-grid">
+            <div class="plan">
+                <h3>Starter</h3>
+                <div class="price">1.500.000đ <span>/tháng</span></div>
+                <ul>
+                    <li>200 requests/tháng</li>
+                    <li>Tư vấn pháp luật (Q&A)</li>
+                    <li>Tìm kiếm văn bản luật</li>
+                    <li>1 API key</li>
+                    <li>Email support</li>
+                </ul>
+                <a href="#" class="btn btn-primary" style="width:100%">Bắt đầu</a>
+            </div>
+            <div class="plan featured">
+                <h3>Professional</h3>
+                <div class="price">3.500.000đ <span>/tháng</span></div>
+                <ul>
+                    <li>1.000 requests/tháng</li>
+                    <li>Tất cả tính năng Starter</li>
+                    <li>Rà soát hợp đồng</li>
+                    <li>Soạn thảo văn bản</li>
+                    <li>5 API keys</li>
+                    <li>Priority support</li>
+                </ul>
+                <a href="#" class="btn btn-primary" style="width:100%">Dùng thử 14 ngày</a>
+            </div>
+            <div class="plan">
+                <h3>Enterprise</h3>
+                <div class="price">Liên hệ</div>
+                <ul>
+                    <li>Unlimited requests</li>
+                    <li>Tất cả tính năng Pro</li>
+                    <li>Batch processing</li>
+                    <li>Custom templates</li>
+                    <li>Dedicated support</li>
+                    <li>SLA 99.9%</li>
+                </ul>
+                <a href="#" class="btn btn-primary" style="width:100%">Liên hệ</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <p>© 2026 Legal AI Agent — Powered by AI, Built for Vietnamese Businesses</p>
+        <p style="margin-top:1rem; opacity:0.7">
+            <a href="#">API Docs</a> · <a href="#">Blog</a> · <a href="#">Điều khoản</a> · <a href="#">Liên hệ</a>
+        </p>
+    </footer>
+
+    <!-- Chat Widget -->
+    <div class="chat-widget">
+        <div class="chat-box" id="chatBox">
+            <div class="chat-header">🏛️ Legal AI Agent — Demo</div>
+            <div class="chat-messages" id="chatMessages">
+                <div class="msg bot">Xin chào! Tôi là Legal AI Agent. Hãy hỏi tôi bất kỳ câu hỏi pháp luật nào.</div>
+            </div>
+            <div class="chat-input">
+                <input type="text" id="chatInput" placeholder="Nhập câu hỏi pháp luật..." onkeypress="if(event.key==='Enter')sendChat()">
+                <button onclick="sendChat()">Gửi</button>
+            </div>
+        </div>
+        <button class="chat-btn" onclick="toggleChat()">💬</button>
+    </div>
+
+    <script>
+        function toggleChat() {
+            document.getElementById('chatBox').classList.toggle('open');
+        }
+        
+        async function sendChat() {
+            const input = document.getElementById('chatInput');
+            const messages = document.getElementById('chatMessages');
+            const question = input.value.trim();
+            if (!question) return;
+            
+            messages.innerHTML += `<div class="msg user">${question}</div>`;
+            input.value = '';
+            messages.innerHTML += `<div class="msg bot" id="loading">⏳ Đang tra cứu...</div>`;
+            messages.scrollTop = messages.scrollHeight;
+            
+            try {
+                const res = await fetch('/v1/legal/ask', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-API-Key': 'demo-key' },
+                    body: JSON.stringify({ question })
+                });
+                const data = await res.json();
+                document.getElementById('loading').remove();
+                messages.innerHTML += `<div class="msg bot">${data.answer || data.detail || 'Xin lỗi, có lỗi xảy ra.'}</div>`;
+            } catch(e) {
+                document.getElementById('loading').remove();
+                messages.innerHTML += `<div class="msg bot">Demo đang trong giai đoạn phát triển. Vui lòng liên hệ để dùng thử API.</div>`;
+            }
+            messages.scrollTop = messages.scrollHeight;
+        }
+    </script>
+</body>
+</html>

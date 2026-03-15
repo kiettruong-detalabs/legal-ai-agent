@@ -3,6 +3,7 @@ Legal AI Agent API
 - Full-text search Vietnamese law database
 - Claude OAuth for AI processing
 - Multi-tenant API key authentication
+- User authentication and management
 """
 from fastapi import FastAPI, HTTPException, Depends, Header, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -20,10 +21,13 @@ import time
 import os
 from contextlib import contextmanager
 
+# Import new routes
+from .routes import auth, company, keys, usage, chats, documents
+
 app = FastAPI(
     title="Legal AI Agent API",
     description="AI-powered Vietnamese Legal Assistant - Tư vấn pháp luật, soạn thảo văn bản, rà soát hợp đồng",
-    version="1.0.0"
+    version="2.0.0"
 )
 
 app.add_middleware(
@@ -33,6 +37,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include new routers
+app.include_router(auth.router)
+app.include_router(company.router)
+app.include_router(keys.router)
+app.include_router(usage.router)
+app.include_router(chats.router)
+app.include_router(documents.router)
 
 # Static files
 static_dir = pathlib.Path(__file__).parent.parent.parent / "static"

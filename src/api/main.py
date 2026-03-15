@@ -25,12 +25,19 @@ import jwt
 JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET", "your-super-secret-jwt-key-change-in-production")
 
 # Import new routes
-from .routes import auth, company, keys, usage, chats, documents
+from .routes import auth, company, keys, usage, chats, documents, admin, contracts
+from .middleware.logging import PlatformLoggingMiddleware
 
 app = FastAPI(
     title="Legal AI Agent API",
     description="AI-powered Vietnamese Legal Assistant - Tư vấn pháp luật, soạn thảo văn bản, rà soát hợp đồng",
     version="2.0.0"
+)
+
+# Add logging middleware (before CORS)
+app.add_middleware(
+    PlatformLoggingMiddleware,
+    exclude_paths=["/health", "/docs", "/openapi.json", "/redoc", "/static", "/"]
 )
 
 app.add_middleware(
@@ -48,6 +55,8 @@ app.include_router(keys.router)
 app.include_router(usage.router)
 app.include_router(chats.router)
 app.include_router(documents.router)
+app.include_router(admin.router)
+app.include_router(contracts.router)
 
 # Static files
 static_dir = pathlib.Path(__file__).parent.parent.parent / "static"

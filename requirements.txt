@@ -1,39 +1,6 @@
-# Web framework
-fastapi>=0.109.0
-uvicorn[standard]>=0.27.0
-python-multipart>=0.0.6
-
-# Supabase
-supabase>=2.3.0
-postgrest>=0.16.0
-
-# LLM
-anthropic>=0.18.0
-
-# Embedding
-openai>=1.12.0
-# sentence-transformers>=2.5.0  # for self-hosted BGE-M3
-
-# Document processing
-python-docx>=1.1.0
-PyPDF2>=3.0.0
-# surya-ocr>=0.4.0  # for OCR (install separately, heavy)
-
-# Data
-pydantic>=2.5.0
-pydantic-settings>=2.1.0
-
-# Async
-celery>=5.3.0
-redis>=5.0.0
-
-# Web crawling (law data)
-httpx>=0.26.0
-beautifulsoup4>=4.12.0
-lxml>=5.1.0
-
-# Utils
+fastapi>=0.115.0
+uvicorn>=0.34.0
+psycopg2-binary>=2.9.0
+httpx>=0.28.0
+pydantic>=2.0.0
 python-dotenv>=1.0.0
-bcrypt>=4.1.0
-tenacity>=8.2.0  # retry logic
-structlog>=24.1.0  # structured logging

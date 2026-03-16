@@ -890,6 +890,9 @@
         <!-- Resize Handle (center <-> chat) -->
         <div class="resize-handle" id="rightResizeHandle"></div>
 
+        <!-- Floating Chat Button (when panel collapsed) -->
+        <button id="chatFab" onclick="toggleChatPanel()" style="display:none; position:fixed; bottom:24px; right:24px; width:56px; height:56px; border-radius:50%; background:var(--accent); color:white; border:none; cursor:pointer; font-size:24px; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(99,102,241,0.4); z-index:200; transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">🤖</button>
+
         <!-- Right Panel — Chat -->
         <div class="chat-panel" id="chatPanel">
             <div class="chat-panel-header">
@@ -1096,7 +1099,7 @@
         let sidebarWidth = parseInt(localStorage.getItem('sidebarWidth')) || 240;
         let chatWidth = parseInt(localStorage.getItem('chatWidth')) || 380;
         let sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-        let chatCollapsed = localStorage.getItem('chatCollapsed') === 'true';
+        let chatCollapsed = false; // Always start with chat open in VSCode layout
         let activeSidebarPanel = localStorage.getItem('activeSidebarPanel') || 'explorer';
 
         const categoryIcons = { 'hop_dong': '📝', 'hanh_chinh': '📄', 'noi_bo': '📋' };
@@ -1221,11 +1224,14 @@
 
         function applyChatWidth() {
             const panel = document.getElementById('chatPanel');
+            const fab = document.getElementById('chatFab');
             if (chatCollapsed) {
                 panel.classList.add('collapsed');
+                if (fab) fab.style.display = 'flex';
             } else {
                 panel.classList.remove('collapsed');
                 panel.style.width = chatWidth + 'px';
+                if (fab) fab.style.display = 'none';
             }
         }
 

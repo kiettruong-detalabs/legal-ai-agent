@@ -137,16 +137,16 @@ async def upload_document(
         
         if file.content_type == "application/pdf":
             extracted_text, page_count = extract_text_from_pdf(full_path)
-            status = 'processed'
+            status = 'analyzed'
         
         elif file.content_type in ["application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/msword"]:
             extracted_text = extract_text_from_docx(full_path)
-            status = 'processed'
+            status = 'analyzed'
         
         elif file.content_type == "text/plain":
             with open(full_path, 'r', encoding='utf-8') as f:
                 extracted_text = f.read()
-            status = 'processed'
+            status = 'analyzed'
         
         elif file.content_type in ["image/jpeg", "image/png", "image/jpg"]:
             # Image files need OCR (Tesseract not available in production)

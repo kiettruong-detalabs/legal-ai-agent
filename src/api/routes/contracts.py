@@ -22,6 +22,97 @@ UPLOAD_DIR = Path("/home/admin_1/projects/legal-ai-agent/uploads/contracts")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 ALLOWED_EXTENSIONS = {".pdf", ".docx", ".doc", ".txt", ".jpg", ".jpeg", ".png"}
 
+
+def extract_file_text(file_path: str, file_ext: str, content: bytes = None) -> Optional[str]:
+    """Extract text from PDF, DOCX, or TXT files"""
+    try:
+        if file_ext == ".txt":
+            return content.decode('utf-8', errors='ignore') if content else ""
+        
+        elif file_ext == ".pdf":
+            from PyPDF2 import PdfReader
+            reader = PdfReader(file_path)
+            text_parts = []
+            for page in reader.pages:
+                text = page.extract_text()
+                if text:
+                    text_parts.append(text)
+            return "\n".join(text_parts) if text_parts else None
+        
+        elif file_ext in (".docx", ".doc"):
+            from docx import Document
+            doc = Document(file_path)
+            text_parts = []
+            for para in doc.paragraphs:
+                if para.text.strip():
+                    text_parts.append(para.text)
+            # Also extract from tables
+            for table in doc.tables:
+                for row in table.rows:
+                    row_text = " | ".join(cell.text.strip() for cell in row.cells if cell.text.strip())
+                    if row_text:
+                        text_parts.append(row_text)
+            return "\n".join(text_parts) if text_parts else None
+        
+        elif file_ext in (".jpg", ".jpeg", ".png"):
+            # TODO: OCR with pytesseract if available
+            return None
+    except Exception as e:
+        print(f"Text extraction error ({file_ext}): {e}")
+        return None
+
+
+async def ai_analyze_contract(text: str) -> dict:
+    """Use Claude to extract contract metadata from text"""
+    CLAUDE_OAUTH_TOKEN = os.getenv("CLAUDE_OAUTH_TOKEN", "")
+    
+    system_prompt = """Phân tích văn bản hợp đồng và trích xuất thông tin. Trả về JSON thuần túy (không markdown):
+{
+    "title": "Tên hợp đồng (ví dụ: Hợp đồng lao động giữa Công ty ABC và Nguyễn Văn A)",
+    "contract_type": "hop_dong_lao_dong|hop_dong_dich_vu|hop_dong_thue|hop_dong_mua_ban|hop_dong_hop_tac|khac",
+    "parties": ["Bên A: Công ty ABC", "Bên B: Nguyễn Văn A"],
+    "start_date": "YYYY-MM-DD hoặc null",
+    "end_date": "YYYY-MM-DD hoặc null",
+    "value": số tiền (số nguyên VNĐ) hoặc null,
+    "summary": "Tóm tắt nội dung chính trong 2-3 câu"
+}
+Chỉ trả về JSON, không thêm text hay markdown."""
+
+    headers = {
+        "Authorization": f"Bearer {CLAUDE_OAUTH_TOKEN}",
+        "anthropic-beta": "oauth-2025-04-20",
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json"
+    }
+    
+    payload = {
+        "model": "claude-sonnet-4-20250514",
+        "max_tokens": 1024,
+        "system": system_prompt,
+        "messages": [{"role": "user", "content": f"Phân tích hợp đồng:\n\n{text[:15000]}"}]
+    }
+    
+    try:
+        async with httpx.AsyncClient(timeout=60) as client:
+            response = await client.post(
+                "https://api.anthropic.com/v1/messages",
+                headers=headers,
+                json=payload
+            )
+            response.raise_for_status()
+            data = response.json()
+            content = data["content"][0]["text"]
+            # Clean markdown code blocks if any
+            content = content.strip()
+            if content.startswith("```"):
+                content = content.split("\n", 1)[1] if "\n" in content else content
+                content = content.rsplit("```", 1)[0] if "```" in content else content
+            return json.loads(content.strip())
+    except Exception as e:
+        print(f"AI contract analysis error: {e}")
+        return {}
+
+
 # ============================================
 # Models
 # ============================================
@@ -125,18 +216,64 @@ Hãy rà soát và trả về JSON như yêu cầu."""
 # Endpoints
 # ============================================
 
+@router.post("/analyze")
+async def analyze_uploaded_file(
+    file: UploadFile = File(...),
+    current_user: Dict = Depends(get_current_user)
+):
+    """Upload a file and get AI-extracted metadata (name, type, parties, dates, value)"""
+    file_ext = Path(file.filename).suffix.lower()
+    if file_ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(400, f"File type not allowed. Allowed: {', '.join(ALLOWED_EXTENSIONS)}")
+    
+    content = await file.read()
+    
+    # Save temp file for extraction
+    temp_id = str(uuid.uuid4())
+    temp_path = str(UPLOAD_DIR / f"temp_{temp_id}{file_ext}")
+    with open(temp_path, "wb") as f:
+        f.write(content)
+    
+    # Extract text
+    extracted_text = extract_file_text(temp_path, file_ext, content)
+    
+    # Clean up temp file
+    try:
+        os.remove(temp_path)
+    except:
+        pass
+    
+    if not extracted_text or len(extracted_text.strip()) < 20:
+        return {
+            "success": False,
+            "message": "Không thể đọc nội dung file. Vui lòng nhập thông tin thủ công.",
+            "extracted_text": extracted_text,
+            "metadata": {}
+        }
+    
+    # AI analyze
+    metadata = await ai_analyze_contract(extracted_text)
+    
+    return {
+        "success": True,
+        "extracted_text": extracted_text[:5000],
+        "metadata": metadata
+    }
+
+
 @router.post("")
 async def create_contract(
-    name: str = Form(...),
+    name: str = Form(""),
     contract_type: Optional[str] = Form(None),
-    parties: Optional[str] = Form("[]"),  # JSON string
+    parties: Optional[str] = Form("[]"),
     start_date: Optional[str] = Form(None),
     end_date: Optional[str] = Form(None),
     notes: Optional[str] = Form(None),
+    value: Optional[str] = Form("0"),
     file: Optional[UploadFile] = File(None),
     current_user: Dict = Depends(get_current_user)
 ):
-    """Create/upload contract"""
+    """Create/upload contract with optional AI auto-fill"""
     
     # Parse parties JSON
     try:
@@ -173,10 +310,8 @@ async def create_contract(
         
         file_type = file_ext
         
-        # Extract text (basic - for txt files)
-        if file_ext == ".txt":
-            extracted_text = content.decode('utf-8', errors='ignore')
-        # TODO: Add PDF/DOCX extraction with pypdf2, python-docx
+        # Extract text from uploaded file
+        extracted_text = extract_file_text(file_path, file_ext, content)
     
     # Insert into database
     with get_db() as conn:

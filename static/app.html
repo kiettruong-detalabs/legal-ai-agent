@@ -2911,17 +2911,26 @@ console.log(data);</code></pre>
                     <div class="form-group">
                         <label class="form-label">File hợp đồng (PDF, DOCX, hoặc ảnh)</label>
                         <div id="dropZone" class="drop-zone">
-                            <input type="file" id="contractFile" accept=".pdf,.docx,.doc,.png,.jpg,.jpeg" style="display:none" onchange="handleFileSelected(event)">
+                            <input type="file" id="contractFile" accept=".pdf,.docx,.doc,.png,.jpg,.jpeg,.txt" style="display:none" onchange="handleFileSelected(event)">
                             <div id="dropZoneContent">
                                 <div style="font-size: 2rem; margin-bottom: 0.5rem;">📎</div>
                                 <div>Kéo thả file vào đây hoặc <span style="color: var(--accent); cursor: pointer;" onclick="document.getElementById('contractFile').click()">chọn file</span></div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem;">AI sẽ tự động quét và điền thông tin</div>
                             </div>
                             <div id="filePreview" class="hidden"></div>
                         </div>
                     </div>
+                    <!-- AI Analysis Status -->
+                    <div id="aiAnalysisStatus" class="hidden" style="padding: 0.75rem 1rem; background: var(--accent-bg); border: 1px solid var(--accent); border-radius: 8px; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.75rem;">
+                        <div class="spinner" style="width: 18px; height: 18px;"></div>
+                        <span style="color: var(--accent); font-size: 0.875rem;">🤖 AI đang phân tích hợp đồng...</span>
+                    </div>
+                    <div id="aiAnalysisDone" class="hidden" style="padding: 0.75rem 1rem; background: rgba(74, 222, 128, 0.1); border: 1px solid var(--success); border-radius: 8px; margin-bottom: 1rem;">
+                        <span style="color: var(--success); font-size: 0.875rem;">✅ AI đã tự động điền thông tin — kiểm tra và chỉnh sửa nếu cần</span>
+                    </div>
                     <div class="form-group">
                         <label class="form-label">Tên hợp đồng *</label>
-                        <input type="text" class="form-input" id="contractTitle" required placeholder="VD: Hợp đồng lao động - Nguyễn Văn A">
+                        <input type="text" class="form-input" id="contractTitle" required placeholder="AI sẽ tự động điền...">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Loại hợp đồng *</label>
@@ -2931,12 +2940,13 @@ console.log(data);</code></pre>
                             <option value="hop_dong_dich_vu">Hợp đồng dịch vụ</option>
                             <option value="hop_dong_thue">Hợp đồng thuê</option>
                             <option value="hop_dong_mua_ban">Hợp đồng mua bán</option>
+                            <option value="hop_dong_hop_tac">Hợp đồng hợp tác</option>
                             <option value="khac">Khác</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Các bên tham gia (phân cách bằng dấu phẩy)</label>
-                        <input type="text" class="form-input" id="contractParties" placeholder="VD: Công ty ABC, Nguyễn Văn A">
+                        <label class="form-label">Các bên tham gia</label>
+                        <input type="text" class="form-input" id="contractParties" placeholder="AI sẽ tự động điền...">
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div class="form-group">
@@ -2952,9 +2962,13 @@ console.log(data);</code></pre>
                         <label class="form-label">Giá trị hợp đồng (VNĐ)</label>
                         <input type="number" class="form-input" id="contractValue" placeholder="0">
                     </div>
+                    <div id="aiSummary" class="hidden form-group">
+                        <label class="form-label">📝 Tóm tắt AI</label>
+                        <div style="padding: 0.75rem; background: var(--bg-tertiary); border-radius: 6px; font-size: 0.875rem; color: var(--text-secondary); line-height: 1.5;" id="aiSummaryText"></div>
+                    </div>
                     <div class="modal-actions">
                         <button type="button" class="btn btn-secondary" onclick="closeModal('uploadContractModal')">Hủy</button>
-                        <button type="submit" class="btn btn-primary">📤 Tải lên</button>
+                        <button type="submit" class="btn btn-primary" id="contractSubmitBtn">📤 Tải lên</button>
                     </div>
                 </form>
             </div>
@@ -4660,13 +4674,83 @@ Báo cáo được tạo bởi Legal AI Agent
                         <button type="button" class="icon-btn" onclick="clearFile()" title="Xóa">✕</button>
                     </div>
                 `;
+                
+                // Trigger AI analysis
+                analyzeContractFile(file);
             }
+        }
+
+        async function analyzeContractFile(file) {
+            const statusEl = document.getElementById('aiAnalysisStatus');
+            const doneEl = document.getElementById('aiAnalysisDone');
+            const summaryEl = document.getElementById('aiSummary');
+            
+            statusEl.classList.remove('hidden');
+            statusEl.style.display = 'flex';
+            doneEl.classList.add('hidden');
+            summaryEl.classList.add('hidden');
+            
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                const token = localStorage.getItem('token');
+                const response = await fetch('/v1/contracts/analyze', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    if (data.success && data.metadata) {
+                        const m = data.metadata;
+                        
+                        // Auto-fill fields
+                        if (m.title) document.getElementById('contractTitle').value = m.title;
+                        if (m.contract_type) {
+                            const typeSelect = document.getElementById('contractType');
+                            const option = typeSelect.querySelector(`option[value="${m.contract_type}"]`);
+                            if (option) typeSelect.value = m.contract_type;
+                            else typeSelect.value = 'khac';
+                        }
+                        if (m.parties && m.parties.length > 0) {
+                            document.getElementById('contractParties').value = m.parties.join(', ');
+                        }
+                        if (m.start_date) document.getElementById('contractStartDate').value = m.start_date;
+                        if (m.end_date) document.getElementById('contractEndDate').value = m.end_date;
+                        if (m.value) document.getElementById('contractValue').value = m.value;
+                        
+                        if (m.summary) {
+                            document.getElementById('aiSummaryText').textContent = m.summary;
+                            summaryEl.classList.remove('hidden');
+                        }
+                        
+                        doneEl.classList.remove('hidden');
+                        showToast('AI đã phân tích xong hợp đồng!', 'success');
+                    } else {
+                        showToast('Không thể đọc nội dung file. Vui lòng nhập thủ công.', 'warning');
+                    }
+                } else {
+                    showToast('Lỗi phân tích file', 'error');
+                }
+            } catch (error) {
+                console.error('AI analysis error:', error);
+                showToast('Không thể phân tích file. Vui lòng nhập thủ công.', 'warning');
+            }
+            
+            statusEl.classList.add('hidden');
+            statusEl.style.display = 'none';
         }
 
         function clearFile() {
             document.getElementById('contractFile').value = '';
             document.getElementById('filePreview').classList.add('hidden');
             document.getElementById('dropZoneContent').classList.remove('hidden');
+            document.getElementById('aiAnalysisStatus').classList.add('hidden');
+            document.getElementById('aiAnalysisDone').classList.add('hidden');
+            document.getElementById('aiSummary').classList.add('hidden');
         }
 
         async function handleContractUpload(event) {

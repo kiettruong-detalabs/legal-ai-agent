@@ -746,6 +746,17 @@ def multi_query_search(question: str, domains: Optional[List[str]] = None, limit
 
 
 # ============================================
+# Initialize Agent with shared functions
+# ============================================
+legal_agent.init_agent(
+    get_db_fn=get_db,
+    multi_query_search_fn=multi_query_search,
+    search_laws_fn=search_laws,
+    detect_domain_fn=detect_domain,
+    fetch_company_context_fn=fetch_company_context
+)
+
+# ============================================
 # API Endpoints
 # ============================================
 
@@ -774,143 +785,8 @@ async def health():
 
 @app.post("/v1/legal/ask", response_model=LegalResponse)
 async def legal_ask(query: LegalQuery, company: dict = Depends(verify_api_key)):
-    """Tư vấn pháp luật - Legal Q&A"""
+    """Tư vấn pháp luật - Legal Q&A (Agent-based with tool use)"""
     
-    # Auto-detect domain if not provided
-    domains = query.domains
-    if not domains:
-        detected = detect_domain(query.question)
-        if detected:
-            domains = detected
-    
-    # Multi-query search for better results
-    sources = multi_query_search(query.question, domains, query.max_sources)
-    
-    # Build enhanced context from search results
-    context_parts = []
-    citations = []
-    for i, src in enumerate(sources, 1):
-        # Format: clearly show law title, number, article
-        law_title = src['law_title']
-        law_number = src.get('law_number', 'N/A')
-        article = src.get('article', 'N/A')
-        content = src['content'][:2000]
-        
-        context_parts.append(f"""--- NGUỒN {i} ---
-Văn bản: {law_title} (Số: {law_number})
-Điều: {article}
-Nội dung:
-{content}
----""")
-        
-        citations.append({
-            "source": law_title,
-            "law_number": law_number,
-            "article": article,
-            "relevance": float(src.get("rank", 0))
-        })
-    
-    context = "\n\n".join(context_parts)
-    
-    # Fetch company-specific context (documents & contracts)
-    company_context = ""
-    if company.get("company_id"):
-        try:
-            company_context = fetch_company_context(
-                str(company["company_id"]), query.question
-            )
-        except Exception as e:
-            print(f"Error fetching company context: {e}")
-
-    # Senior Vietnamese Legal Expert system prompt
-    system_prompt = """Bạn là LUẬT SƯ CAO CẤP chuyên tư vấn pháp luật Việt Nam, với hơn 20 năm kinh nghiệm thực tiễn. Bạn được đào tạo bài bản về Luật Việt Nam và có chuyên môn sâu trong tất cả các lĩnh vực pháp luật.
-
-## NGUYÊN TẮC CỐT LÕI
-
-1. **LUÔN TRÍCH DẪN CỤ THỂ**: Mỗi ý kiến pháp lý PHẢI kèm trích dẫn:
-   - Format: "Theo **Điều X, Khoản Y** của **Luật Z năm YYYY** (Số: XX/YYYY/QH)"
-   - Nếu là Nghị định: "Theo **Điều X** Nghị định số XX/YYYY/NĐ-CP ngày DD/MM/YYYY"
-   - Nếu là Thông tư: "Theo **Điều X** Thông tư số XX/YYYY/TT-BXY ngày DD/MM/YYYY"
-   
-2. **PHÂN BIỆT HIỆU LỰC**: 
-   - Ghi rõ văn bản còn hiệu lực hay đã hết hiệu lực
-   - Nếu văn bản đã được thay thế, chỉ ra văn bản thay thế
-   - Ưu tiên văn bản MỚI NHẤT (năm ban hành gần nhất)
-
-3. **CẤU TRÚC TRẢ LỜI**:
-   
-   ### 📋 Tóm tắt
-   (1-2 câu trả lời trực tiếp câu hỏi)
-   
-   ### ⚖️ Căn cứ pháp lý
-   (Liệt kê các điều luật áp dụng, trích dẫn nội dung cụ thể)
-   
-   ### 📖 Phân tích chi tiết
-   (Giải thích rõ ràng, phân tích từng trường hợp nếu có)
-   
-   ### 💡 Lời khuyên thực tiễn
-   (Hướng dẫn cụ thể nên làm gì, thủ tục ra sao, lưu ý gì)
-   
-   ### ⚠️ Lưu ý
-   (Các ngoại lệ, rủi ro, trường hợp đặc biệt cần chú ý)
-
-4. **KHI SOẠN THẢO VĂN BẢN**:
-   - Hỏi thông tin cần thiết TỐI ĐA 1 lần
-   - Soạn HOÀN CHỈNH, đúng chuẩn pháp lý VN
-   - Tuân thủ Nghị định 30/2020/NĐ-CP về công tác văn thư
-   - Bao gồm đầy đủ điều khoản bắt buộc theo luật
-   - Dùng [THÔNG TIN CẦN ĐIỀN] cho phần thiếu
-
-## QUAN TRỌNG
-- Sử dụng nguồn luật được cung cấp làm tham chiếu CHÍNH
-- Nếu có tài liệu/hợp đồng của công ty, ĐỐI CHIẾU với quy định pháp luật
-- Kết hợp kiến thức pháp luật VN để trả lời TOÀN DIỆN
-- KHÔNG bịa số hiệu văn bản — nếu không chắc chắn, ghi "cần xác minh thêm"
-- Phân biệt rõ: quy định bắt buộc vs khuyến nghị vs thông lệ thực tiễn
-- Kết thúc bằng disclaimer: "Đây là tư vấn tham khảo. Đối với vụ việc cụ thể, cần tham vấn luật sư trực tiếp."
-
-## VĂN BẢN PHÁP LUẬT QUAN TRỌNG CẦN NHỚ
-- Bộ luật Lao động 2019 (45/2019/QH14) - hiệu lực từ 01/01/2021
-- Bộ luật Dân sự 2015 (91/2015/QH13)
-- Luật Doanh nghiệp 2020 (59/2020/QH14)
-- Luật Đầu tư 2020 (61/2020/QH14)
-- Luật Thuế TNDN 2008, sửa đổi 2013, 2014
-- Luật Thuế TNCN 2007, sửa đổi 2012, 2014
-- Luật Đất đai 2024 (31/2024/QH15) - hiệu lực từ 01/08/2024
-- Luật Nhà ở 2023 (27/2023/QH15)
-- Luật Hôn nhân và Gia đình 2014
-- Bộ luật Hình sự 2015, sửa đổi 2017"""
-
-    # Build user message with law sources and company context
-    company_context_section = ""
-    if company_context:
-        company_context_section = f"""
-
-TÀI LIỆU NỘI BỘ CỦA CÔNG TY (dùng để đối chiếu với pháp luật):
-{company_context}
-"""
-
-    # Build consulted laws summary
-    consulted_laws = []
-    seen_laws = set()
-    for src in sources:
-        law_key = f"{src['law_title']} ({src.get('law_number', 'N/A')})"
-        if law_key not in seen_laws:
-            seen_laws.add(law_key)
-            consulted_laws.append(law_key)
-
-    consulted_section = ""
-    if consulted_laws:
-        consulted_section = "\n📚 CÁC VĂN BẢN ĐÃ TRA CỨU:\n" + "\n".join(f"  • {law}" for law in consulted_laws[:15])
-
-    user_message = f"""YÊU CẦU: {query.question}
-
-CÁC NGUỒN LUẬT LIÊN QUAN (dùng làm tham chiếu — hãy trích dẫn Điều, Khoản cụ thể):
-{context}
-{company_context_section}{consulted_section}
-
-Hãy thực hiện yêu cầu trên với cấu trúc rõ ràng. Trích dẫn CỤ THỂ Điều, Khoản, tên Luật và số hiệu."""
-
     # Load chat history for multi-turn conversation
     chat_history = []
     session_id = None
@@ -933,14 +809,23 @@ Hãy thực hiện yêu cầu trên với cấu trúc rõ ràng. Trích dẫn C�
         except Exception as e:
             print(f"Error loading chat history: {e}")
     
-    result = await call_claude(system_prompt, user_message, max_tokens=8192, history=chat_history)
+    # Run the agent
+    result = await legal_agent.run_agent(
+        question=query.question,
+        company_id=str(company["company_id"]),
+        user_id=str(user_id) if user_id else None,
+        session_id=str(session_id) if session_id else None,
+        chat_history=chat_history
+    )
     
+    citations = result.get("citations", [])
+    
+    # Save to chat history
     if user_id:
         with get_db() as conn:
             cur = conn.cursor(cursor_factory=RealDictCursor)
             
             if not session_id:
-                # Get or create active session for this user
                 cur.execute("""
                     SELECT id FROM chat_sessions
                     WHERE user_id = %s AND company_id = %s AND agent_type = 'qa' AND status = 'active'
@@ -952,7 +837,6 @@ Hãy thực hiện yêu cầu trên với cấu trúc rõ ràng. Trích dẫn C�
                 if session:
                     session_id = session["id"]
                 else:
-                    # Create new session
                     cur.execute("""
                         INSERT INTO chat_sessions (company_id, user_id, agent_type, title, status)
                         VALUES (%s, %s, 'qa', %s, 'active')
@@ -960,31 +844,28 @@ Hãy thực hiện yêu cầu trên với cấu trúc rõ ràng. Trích dẫn C�
                     """, (company["company_id"], user_id, f"Q&A - {query.question[:50]}..."))
                     session_id = cur.fetchone()["id"]
             
-            # Save user question
             cur.execute("""
                 INSERT INTO messages (session_id, company_id, role, content, tokens_used, model)
                 VALUES (%s, %s, 'user', %s, 0, '')
             """, (session_id, company["company_id"], query.question))
             
-            # Save assistant answer with citations
+            total_tokens = result.get("input_tokens", 0) + result.get("output_tokens", 0)
             cur.execute("""
                 INSERT INTO messages (session_id, company_id, role, content, citations, confidence, tokens_used, model)
                 VALUES (%s, %s, 'assistant', %s, %s, %s, %s, %s)
             """, (
                 session_id,
                 company["company_id"],
-                result["content"], 
+                result["answer"], 
                 json.dumps(citations),
-                0.85 if sources else 0.5,
-                result["input_tokens"] + result["output_tokens"],
-                result["model"]
+                0.85 if citations else 0.5,
+                total_tokens,
+                result.get("model", "claude-sonnet-4-20250514")
             ))
             
-            # Update session message count and last message time
             cur.execute("""
                 UPDATE chat_sessions 
-                SET message_count = message_count + 2,
-                    last_message_at = now()
+                SET message_count = message_count + 2, last_message_at = now()
                 WHERE id = %s
             """, (session_id,))
             
@@ -993,118 +874,26 @@ Hãy thực hiện yêu cầu trên với cấu trúc rõ ràng. Trích dẫn C�
     # Update usage
     with get_db() as conn:
         cur = conn.cursor()
-        total_tokens = result["input_tokens"] + result["output_tokens"]
         cur.execute("UPDATE companies SET used_quota = used_quota + 1 WHERE id = %s", (company["company_id"],))
         cur.execute("""
             INSERT INTO usage_logs (company_id, endpoint, agent_type, input_tokens, output_tokens, status_code)
-            VALUES (%s, '/v1/legal/ask', 'qa', %s, %s, 200)
-        """, (company["company_id"], result["input_tokens"], result["output_tokens"]))
+            VALUES (%s, '/v1/legal/ask', 'agent', %s, %s, 200)
+        """, (company["company_id"], result.get("input_tokens", 0), result.get("output_tokens", 0)))
         conn.commit()
     
     return LegalResponse(
-        answer=result["content"],
+        answer=result["answer"],
         citations=citations,
-        confidence=0.85 if sources else 0.5,
-        tokens_used=result["input_tokens"] + result["output_tokens"],
-        model=result["model"],
+        confidence=0.85 if citations else 0.5,
+        tokens_used=result.get("input_tokens", 0) + result.get("output_tokens", 0),
+        model=result.get("model", "claude-sonnet-4-20250514"),
         session_id=str(session_id) if session_id else None
     )
 
 
 @app.post("/v1/legal/ask-stream")
 async def legal_ask_stream(query: LegalQuery, company: dict = Depends(verify_api_key)):
-    """Tư vấn pháp luật với streaming SSE - Legal Q&A Streaming"""
-
-    # Auto-detect domain
-    domains = query.domains
-    if not domains:
-        detected = detect_domain(query.question)
-        if detected:
-            domains = detected
-
-    # Multi-query search
-    sources = multi_query_search(query.question, domains, query.max_sources)
-
-    # Build context
-    context_parts = []
-    citations = []
-    for i, src in enumerate(sources, 1):
-        law_title = src['law_title']
-        law_number = src.get('law_number', 'N/A')
-        article = src.get('article', 'N/A')
-        content = src['content'][:2000]
-
-        context_parts.append(f"""--- NGUỒN {i} ---
-Văn bản: {law_title} (Số: {law_number})
-Điều: {article}
-Nội dung:
-{content}
----""")
-
-        citations.append({
-            "source": law_title,
-            "law_number": law_number,
-            "article": article,
-            "relevance": float(src.get("rank", 0))
-        })
-
-    context = "\n\n".join(context_parts)
-
-    # Company context enrichment
-    company_context = ""
-    if company.get("company_id"):
-        try:
-            company_context = fetch_company_context(
-                str(company["company_id"]), query.question
-            )
-        except Exception as e:
-            print(f"Error fetching company context: {e}")
-
-    # Same upgraded system prompt as /v1/legal/ask
-    system_prompt = """Bạn là LUẬT SƯ CAO CẤP chuyên tư vấn pháp luật Việt Nam, với hơn 20 năm kinh nghiệm thực tiễn.
-
-## NGUYÊN TẮC CỐT LÕI
-
-1. **LUÔN TRÍCH DẪN CỤ THỂ**: Mỗi ý kiến pháp lý PHẢI kèm trích dẫn:
-   - Format: "Theo **Điều X, Khoản Y** của **Luật Z năm YYYY** (Số: XX/YYYY/QH)"
-   
-2. **PHÂN BIỆT HIỆU LỰC**: Ghi rõ văn bản còn hiệu lực hay đã hết hiệu lực
-
-3. **CẤU TRÚC TRẢ LỜI**:
-   ### 📋 Tóm tắt
-   ### ⚖️ Căn cứ pháp lý
-   ### 📖 Phân tích chi tiết
-   ### 💡 Lời khuyên thực tiễn
-   ### ⚠️ Lưu ý
-
-## QUAN TRỌNG
-- Sử dụng nguồn luật được cung cấp làm tham chiếu CHÍNH
-- KHÔNG bịa số hiệu văn bản
-- Kết thúc bằng disclaimer"""
-
-    company_context_section = ""
-    if company_context:
-        company_context_section = f"\n\nTÀI LIỆU NỘI BỘ CỦA CÔNG TY:\n{company_context}\n"
-
-    consulted_laws = []
-    seen_laws = set()
-    for src in sources:
-        law_key = f"{src['law_title']} ({src.get('law_number', 'N/A')})"
-        if law_key not in seen_laws:
-            seen_laws.add(law_key)
-            consulted_laws.append(law_key)
-
-    consulted_section = ""
-    if consulted_laws:
-        consulted_section = "\n📚 CÁC VĂN BẢN ĐÃ TRA CỨU:\n" + "\n".join(f"  • {law}" for law in consulted_laws[:15])
-
-    user_message = f"""YÊU CẦU: {query.question}
-
-CÁC NGUỒN LUẬT LIÊN QUAN:
-{context}
-{company_context_section}{consulted_section}
-
-Hãy trả lời với cấu trúc rõ ràng. Trích dẫn CỤ THỂ Điều, Khoản, tên Luật."""
+    """Tư vấn pháp luật với streaming SSE - Agent-based with tool status events"""
 
     # Load chat history
     chat_history = []
@@ -1128,33 +917,46 @@ Hãy trả lời với cấu trúc rõ ràng. Trích dẫn CỤ THỂ Điều, K
         except Exception as e:
             print(f"Error loading chat history: {e}")
 
+    company_id_str = str(company["company_id"])
+
     async def sse_generator():
-        """Generate SSE events"""
+        """Generate SSE events using agent streaming"""
         full_response = []
+        all_citations = []
 
-        # Send citations first
-        yield f"data: {json.dumps({'type': 'citations', 'citations': citations}, ensure_ascii=False)}\n\n"
-
-        # Send consulted laws
-        if consulted_laws:
-            yield f"data: {json.dumps({'type': 'sources', 'laws_consulted': consulted_laws[:15]}, ensure_ascii=False)}\n\n"
-
-        # Stream AI response
         try:
-            async for text_chunk in call_claude_stream(
-                system_prompt, user_message, max_tokens=8192, history=chat_history
+            async for event_str in legal_agent.run_agent_stream_final_text(
+                question=query.question,
+                company_id=company_id_str,
+                user_id=str(user_id) if user_id else None,
+                session_id=str(session_id) if session_id else None,
+                chat_history=chat_history
             ):
-                full_response.append(text_chunk)
-                yield f"data: {json.dumps({'type': 'delta', 'text': text_chunk}, ensure_ascii=False)}\n\n"
+                yield event_str
+
+                # Parse to collect full text and citations for saving
+                if event_str.startswith("data: "):
+                    try:
+                        evt = json.loads(event_str[6:].strip())
+                        if evt.get("type") == "delta":
+                            full_response.append(evt.get("text", ""))
+                        elif evt.get("type") == "citations":
+                            all_citations = evt.get("citations", [])
+                        elif evt.get("type") == "done":
+                            if evt.get("citations"):
+                                all_citations = evt["citations"]
+                    except:
+                        pass
+
         except Exception as e:
             yield f"data: {json.dumps({'type': 'error', 'message': str(e)}, ensure_ascii=False)}\n\n"
             return
 
         complete_text = "".join(full_response)
 
-        # Save to chat history if user is authenticated
+        # Save to chat history
         saved_session_id = session_id
-        if user_id:
+        if user_id and complete_text:
             try:
                 with get_db() as conn:
                     cur = conn.cursor(cursor_factory=RealDictCursor)
@@ -1184,8 +986,8 @@ Hãy trả lời với cấu trúc rõ ràng. Trích dẫn CỤ THỂ Điều, K
                         VALUES (%s, %s, 'assistant', %s, %s, %s, 0, 'claude-sonnet-4-20250514')
                     """, (
                         saved_session_id, company["company_id"],
-                        complete_text, json.dumps(citations),
-                        0.85 if sources else 0.5
+                        complete_text, json.dumps(all_citations),
+                        0.85 if all_citations else 0.5
                     ))
 
                     cur.execute("""
@@ -1204,14 +1006,11 @@ Hãy trả lời với cấu trúc rõ ràng. Trích dẫn CỤ THỂ Điều, K
                             (company["company_id"],))
                 cur.execute("""
                     INSERT INTO usage_logs (company_id, endpoint, agent_type, input_tokens, output_tokens, status_code)
-                    VALUES (%s, '/v1/legal/ask-stream', 'qa', 0, 0, 200)
+                    VALUES (%s, '/v1/legal/ask-stream', 'agent', 0, 0, 200)
                 """, (company["company_id"],))
                 conn.commit()
         except Exception as e:
             print(f"Error updating usage: {e}")
-
-        # Send done event
-        yield f"data: {json.dumps({'type': 'done', 'session_id': str(saved_session_id) if saved_session_id else None}, ensure_ascii=False)}\n\n"
 
     return StreamingResponse(
         sse_generator(),

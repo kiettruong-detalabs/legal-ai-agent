@@ -1064,6 +1064,152 @@
         .risk-type-bars .type-bar-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.5s ease; display: flex; align-items: center; padding-left: 8px; font-size: 0.7rem; color: white; }
         .btn-sm { padding: 6px 12px; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 0.78rem; cursor: pointer; font-family: inherit; transition: all 0.15s; }
         .btn-sm:hover { border-color: var(--accent); color: var(--accent); }
+        .btn-ghost { background: none; border-color: transparent; }
+        .btn-ghost:hover { border-color: var(--border); }
+
+        /* ===== ONBOARDING WIZARD ===== */
+        .onboarding-overlay {
+            position: fixed; inset: 0; z-index: 10000;
+            background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
+            display: flex; align-items: center; justify-content: center;
+            animation: fadeIn 0.3s;
+        }
+        .onboarding-wizard {
+            background: var(--bg-surface); border: 1px solid var(--border);
+            border-radius: 16px; width: 500px; max-width: 90vw;
+            padding: 32px; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+        .onboarding-header { text-align: center; margin-bottom: 24px; }
+        .onboarding-logo { font-size: 3rem; margin-bottom: 8px; }
+        .onboarding-header h2 { font-size: 1.2rem; color: var(--text); margin-bottom: 4px; }
+        .onboarding-header p { font-size: 0.85rem; color: var(--text-muted); }
+        .onboarding-progress {
+            height: 6px; background: var(--bg-elevated); border-radius: 3px;
+            overflow: hidden; margin-bottom: 8px;
+        }
+        .onboarding-progress-bar {
+            height: 100%; background: var(--accent); border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+        .onboarding-progress-text { text-align: center; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 20px; }
+        .onboarding-step {
+            display: flex; align-items: center; gap: 12px; padding: 12px 16px;
+            border-radius: 10px; margin-bottom: 8px; cursor: pointer;
+            transition: all 0.15s; border: 1px solid var(--border);
+            background: var(--bg-elevated);
+        }
+        .onboarding-step:hover { border-color: var(--accent); }
+        .onboarding-step.completed { opacity: 0.6; }
+        .onboarding-step.completed .step-check { background: var(--accent); color: white; }
+        .step-check {
+            width: 24px; height: 24px; border-radius: 50%;
+            background: var(--bg-overlay); border: 2px solid var(--border);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.7rem; flex-shrink: 0;
+        }
+        .step-info { flex: 1; }
+        .step-title { font-size: 0.85rem; font-weight: 500; color: var(--text); }
+        .step-desc { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+        .onboarding-footer {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border);
+        }
+        .btn-text { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.85rem; }
+        .btn-text:hover { color: var(--text); }
+        .onboarding-footer .btn-primary {
+            padding: 8px 20px; background: var(--accent); color: white;
+            border: none; border-radius: 8px; cursor: pointer; font-size: 0.85rem;
+            transition: all 0.15s;
+        }
+        .onboarding-footer .btn-primary:hover { background: var(--accent-bright); transform: translateY(-1px); }
+
+        /* ===== CONTRACT NOTES PANEL ===== */
+        .contract-notes-panel {
+            border-top: 1px solid var(--border); padding: 16px; margin-top: 16px;
+        }
+        .notes-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .notes-header h3 { font-size: 0.9rem; color: var(--text); }
+        .note-item {
+            display: flex; gap: 10px; padding: 10px 12px; margin-bottom: 8px;
+            background: var(--bg-elevated); border-radius: 8px; border-left: 3px solid var(--accent);
+        }
+        .note-item.warning { border-left-color: #fbbf24; }
+        .note-item.action { border-left-color: #f87171; }
+        .note-item.resolved { opacity: 0.5; text-decoration: line-through; }
+        .note-type-icon { font-size: 1rem; }
+        .note-content { flex: 1; }
+        .note-text { font-size: 0.82rem; color: var(--text); line-height: 1.5; }
+        .note-meta { font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; }
+        .note-actions-inline { display: flex; gap: 4px; }
+        .note-actions-inline button {
+            background: none; border: none; color: var(--text-muted); cursor: pointer;
+            font-size: 0.7rem; padding: 2px 4px;
+        }
+        .note-actions-inline button:hover { color: var(--accent); }
+        .note-input-area { margin-top: 12px; }
+        .note-input-area select {
+            width: 100%; padding: 6px 8px; margin-bottom: 8px;
+            background: var(--bg-elevated); border: 1px solid var(--border);
+            color: var(--text); border-radius: 6px; font-size: 0.82rem;
+        }
+        .note-input-area textarea {
+            width: 100%; padding: 8px; background: var(--bg-elevated);
+            border: 1px solid var(--border); color: var(--text); border-radius: 6px;
+            font-size: 0.82rem; resize: vertical;
+        }
+        .note-actions { display: flex; gap: 8px; margin-top: 8px; }
+
+        /* ===== AI INSIGHTS ===== */
+        .insights-section { margin-top: 24px; }
+        .insights-section h3 { font-size: 0.95rem; margin-bottom: 12px; color: var(--text); }
+        .insight-card {
+            display: flex; gap: 12px; padding: 14px 16px; margin-bottom: 8px;
+            background: var(--bg-elevated); border: 1px solid var(--border);
+            border-radius: 10px; cursor: pointer; transition: all 0.15s;
+        }
+        .insight-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        .insight-card.warning { border-left: 3px solid #fbbf24; }
+        .insight-card.success { border-left: 3px solid #34d399; }
+        .insight-card.info { border-left: 3px solid #60a5fa; }
+        .insight-icon { font-size: 1.3rem; }
+        .insight-info { flex: 1; }
+        .insight-title { font-size: 0.85rem; font-weight: 500; color: var(--text); }
+        .insight-desc { font-size: 0.78rem; color: var(--text-muted); margin-top: 3px; }
+
+        /* ===== VERSION SELECTOR ===== */
+        .version-selector {
+            display: flex; align-items: center; gap: 8px; margin-left: auto;
+        }
+        .version-selector select {
+            padding: 4px 8px; background: var(--bg-elevated); border: 1px solid var(--border);
+            border-radius: 6px; color: var(--text); font-size: 0.78rem; font-family: inherit;
+        }
+
+        /* ===== KEYBOARD SHORTCUTS MODAL ===== */
+        .shortcuts-modal {
+            position: fixed; inset: 0; z-index: 10000;
+            background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .shortcuts-content {
+            background: var(--bg-surface); border: 1px solid var(--border);
+            border-radius: 12px; padding: 24px; width: 600px; max-width: 90vw;
+        }
+        .shortcuts-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .shortcuts-header h2 { font-size: 1rem; color: var(--text-active); }
+        .shortcuts-header button { background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text-muted); cursor: pointer; padding: 4px 8px; border-radius: 6px; font-size: 0.9rem; }
+        .shortcuts-header button:hover { color: var(--text-active); }
+        .shortcuts-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .shortcut-group h3 { font-size: 0.85rem; color: var(--accent); margin-bottom: 8px; }
+        .shortcut-row { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 6px; }
+        kbd {
+            display: inline-block; padding: 2px 6px; background: var(--bg-elevated);
+            border: 1px solid var(--border); border-radius: 4px; font-size: 0.72rem;
+            font-family: monospace; color: var(--text); min-width: 28px; text-align: center;
+        }
+        @media (max-width: 768px) {
+            .shortcuts-grid { grid-template-columns: 1fr; }
+        }
 
         /* ===== ANALYTICS DASHBOARD ===== */
         .analytics-dashboard { padding: 24px; max-width: 900px; margin: 0 auto; }
@@ -1426,6 +1572,13 @@
                                 </div>
                             </div>
                         </div>
+                        <!-- AI Insights Section -->
+                        <div class="insights-section" id="insightsSection">
+                            <h3>💡 AI Insights</h3>
+                            <div class="insights-list" id="insightsList">
+                                <div style="padding:1rem;text-align:center;color:var(--text-muted);font-size:0.82rem">Đang tải gợi ý...</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1460,6 +1613,7 @@
                 <div class="chat-panel-actions" style="position: relative;">
                     <button class="notification-bell" id="notifBell" onclick="toggleNotifications()" title="Thông báo">🔔<span class="notification-badge hidden" id="notifBadge">0</span></button>
                     <div class="notification-panel hidden" id="notifPanel"></div>
+                    <button onclick="exportCurrentChat()" title="Xuất chat">📥</button>
                     <button onclick="startNewChat()" title="Chat mới">➕</button>
                     <button onclick="toggleChatPanel()" title="Ẩn chat">◀</button>
                 </div>
@@ -1590,6 +1744,59 @@
                     <button class="modal-close" onclick="closeModal('reviewResultModal')">✕</button>
                 </div>
                 <div class="modal-body" id="reviewResultContent"></div>
+            </div>
+        </div>
+
+        <!-- Onboarding Wizard Overlay -->
+        <div class="onboarding-overlay hidden" id="onboardingOverlay">
+            <div class="onboarding-wizard">
+                <div class="onboarding-header">
+                    <div class="onboarding-logo">⚖️</div>
+                    <h2>Chào mừng đến với AI Legal Agent!</h2>
+                    <p>Hoàn thành các bước sau để bắt đầu</p>
+                </div>
+                <div class="onboarding-progress">
+                    <div class="onboarding-progress-bar" id="onboardingProgressBar" style="width:0%"></div>
+                </div>
+                <div class="onboarding-progress-text" id="onboardingProgressText">0/6 bước</div>
+                <div class="onboarding-steps" id="onboardingSteps"></div>
+                <div class="onboarding-footer">
+                    <button class="btn-text" onclick="closeOnboarding()">Bỏ qua</button>
+                    <button class="btn-primary" onclick="closeOnboarding()">Bắt đầu sử dụng →</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Keyboard Shortcuts Modal -->
+        <div class="shortcuts-modal hidden" id="shortcutsModal">
+            <div class="shortcuts-content">
+                <div class="shortcuts-header">
+                    <h2>⌨️ Phím tắt</h2>
+                    <button onclick="document.getElementById('shortcutsModal').classList.add('hidden')">✕</button>
+                </div>
+                <div class="shortcuts-grid">
+                    <div class="shortcut-group">
+                        <h3>Chat</h3>
+                        <div class="shortcut-row"><kbd>Enter</kbd> Gửi tin nhắn</div>
+                        <div class="shortcut-row"><kbd>Shift+Enter</kbd> Xuống dòng</div>
+                        <div class="shortcut-row"><kbd>Ctrl+/</kbd> Focus chat</div>
+                        <div class="shortcut-row"><kbd>Ctrl+N</kbd> Chat mới</div>
+                    </div>
+                    <div class="shortcut-group">
+                        <h3>Navigation</h3>
+                        <div class="shortcut-row"><kbd>Ctrl+K</kbd> Command Palette</div>
+                        <div class="shortcut-row"><kbd>Ctrl+B</kbd> Toggle sidebar</div>
+                        <div class="shortcut-row"><kbd>Ctrl+J</kbd> Toggle chat</div>
+                        <div class="shortcut-row"><kbd>Esc</kbd> Đóng modal</div>
+                    </div>
+                    <div class="shortcut-group">
+                        <h3>Slash Commands</h3>
+                        <div class="shortcut-row"><kbd>/tra-cuu</kbd> Tra cứu luật</div>
+                        <div class="shortcut-row"><kbd>/ra-soat</kbd> Rà soát HĐ</div>
+                        <div class="shortcut-row"><kbd>/mau</kbd> Templates</div>
+                        <div class="shortcut-row"><kbd>/rui-ro</kbd> Risk Dashboard</div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -4487,6 +4694,444 @@ console.log(await resp.json());</code></pre>
             updateNotifications();
             refreshWelcomeStats();
         };
+
+        // ===== FEATURE: ONBOARDING WIZARD =====
+        async function checkOnboarding() {
+            var token = localStorage.getItem('token');
+            if (!token) return;
+            if (localStorage.getItem('onboardingDismissed')) return;
+            try {
+                var resp = await fetch('/v1/onboarding/status', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!resp.ok) return;
+                var data = await resp.json();
+                if (data.is_complete) return;
+                showOnboarding(data);
+            } catch (e) { console.error('Onboarding check error:', e); }
+        }
+
+        function showOnboarding(data) {
+            var overlay = document.getElementById('onboardingOverlay');
+            overlay.classList.remove('hidden');
+            var bar = document.getElementById('onboardingProgressBar');
+            bar.style.width = (data.progress || 0) + '%';
+            document.getElementById('onboardingProgressText').textContent = (data.completed || 0) + '/' + (data.total || 6) + ' bước';
+
+            var stepsConfig = [
+                { key: 'profile_complete', icon: '🏢', title: 'Cập nhật hồ sơ công ty', desc: 'Thêm tên, mã số thuế, địa chỉ', actionType: 'settings' },
+                { key: 'first_contract', icon: '📄', title: 'Upload hợp đồng đầu tiên', desc: 'Tải lên để AI rà soát', actionType: 'contracts' },
+                { key: 'first_document', icon: '📁', title: 'Upload tài liệu nội bộ', desc: 'Văn bản, quy định, nội quy', actionType: 'documents' },
+                { key: 'first_chat', icon: '💬', title: 'Chat với AI lần đầu', desc: 'Hỏi bất kỳ câu hỏi pháp lý nào', actionType: 'chat' },
+                { key: 'first_search', icon: '🔍', title: 'Tra cứu luật', desc: 'Tìm kiếm trong 40,000+ văn bản', actionType: 'search' },
+                { key: 'team_setup', icon: '👥', title: 'Mời thành viên', desc: 'Thêm đồng nghiệp vào nhóm', actionType: 'team' }
+            ];
+
+            var stepsEl = document.getElementById('onboardingSteps');
+            stepsEl.innerHTML = stepsConfig.map(function(step) {
+                var done = data.steps && data.steps[step.key];
+                return '<div class="onboarding-step ' + (done ? 'completed' : '') + '" onclick="handleOnboardingStep(\'' + step.actionType + '\')">' +
+                    '<div class="step-check">' + (done ? '✓' : step.icon) + '</div>' +
+                    '<div class="step-info">' +
+                    '<div class="step-title">' + step.title + '</div>' +
+                    '<div class="step-desc">' + step.desc + '</div>' +
+                    '</div>' +
+                    (done ? '<span style="color:var(--accent);font-size:0.75rem">✅ Hoàn thành</span>' : '<span style="color:var(--text-muted);font-size:0.75rem">→</span>') +
+                    '</div>';
+            }).join('');
+        }
+
+        function handleOnboardingStep(actionType) {
+            closeOnboarding();
+            switch (actionType) {
+                case 'settings':
+                    var settingsBtn = document.querySelector('[data-panel="settings"]');
+                    if (settingsBtn) settingsBtn.click();
+                    else openSettingsModal();
+                    break;
+                case 'contracts':
+                    openTabByType('contracts');
+                    break;
+                case 'documents':
+                    openTabByType('documents');
+                    break;
+                case 'chat':
+                    var chatInput = document.getElementById('chatInput');
+                    if (chatInput) chatInput.focus();
+                    break;
+                case 'search':
+                    switchSidebarPanel('search');
+                    break;
+                case 'team':
+                    showToast('Tính năng sắp ra mắt', 'info');
+                    break;
+            }
+        }
+
+        function closeOnboarding() {
+            document.getElementById('onboardingOverlay').classList.add('hidden');
+            localStorage.setItem('onboardingDismissed', 'true');
+        }
+
+        // ===== FEATURE: CONTRACT NOTES =====
+        var currentNotesContractId = null;
+
+        async function loadContractNotes(contractId) {
+            currentNotesContractId = contractId;
+            var token = localStorage.getItem('token');
+            try {
+                var resp = await fetch('/v1/contracts/' + contractId + '/notes', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!resp.ok) return;
+                var data = await resp.json();
+                renderNotes(data.notes || []);
+            } catch (e) { console.error('Load notes error:', e); }
+        }
+
+        function renderNotes(notes) {
+            var el = document.getElementById('contractNotesList');
+            if (!el) return;
+            var typeIcons = { note: '📝', warning: '⚠️', action: '🎯', resolved: '✅' };
+            if (notes.length === 0) {
+                el.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--text-muted);font-size:0.82rem">Chưa có ghi chú</div>';
+                return;
+            }
+            el.innerHTML = notes.map(function(n) {
+                return '<div class="note-item ' + (n.type || '') + ' ' + (n.resolved ? 'resolved' : '') + '">' +
+                    '<div class="note-type-icon">' + (typeIcons[n.type] || '📝') + '</div>' +
+                    '<div class="note-content">' +
+                    '<div class="note-text">' + escapeHtml(n.text) + '</div>' +
+                    '<div class="note-meta">' + new Date(n.created_at).toLocaleString('vi-VN') + '</div>' +
+                    '</div>' +
+                    '<div class="note-actions-inline">' +
+                    (!n.resolved ? '<button onclick="resolveNote(\'' + n.id + '\')">✓</button>' : '') +
+                    '<button onclick="deleteNote(\'' + n.id + '\')">×</button>' +
+                    '</div>' +
+                    '</div>';
+            }).join('');
+        }
+
+        function addContractNote() {
+            var noteArea = document.getElementById('noteInputArea');
+            if (noteArea) {
+                noteArea.classList.remove('hidden');
+                var textarea = document.getElementById('noteText');
+                if (textarea) textarea.focus();
+            }
+        }
+
+        function cancelNote() {
+            var noteArea = document.getElementById('noteInputArea');
+            if (noteArea) noteArea.classList.add('hidden');
+            var textarea = document.getElementById('noteText');
+            if (textarea) textarea.value = '';
+        }
+
+        async function saveNote() {
+            var text = document.getElementById('noteText').value.trim();
+            var type = document.getElementById('noteType').value;
+            if (!text || !currentNotesContractId) return;
+            var token = localStorage.getItem('token');
+            try {
+                var resp = await fetch('/v1/contracts/' + currentNotesContractId + '/notes', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: text, type: type })
+                });
+                if (resp.ok) {
+                    cancelNote();
+                    loadContractNotes(currentNotesContractId);
+                    showToast('Đã lưu ghi chú', 'success');
+                }
+            } catch (e) { showToast('Lỗi lưu ghi chú', 'error'); }
+        }
+
+        async function resolveNote(noteId) {
+            var token = localStorage.getItem('token');
+            try {
+                var resp = await fetch('/v1/contracts/' + currentNotesContractId + '/notes/' + noteId, {
+                    method: 'PUT',
+                    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ resolved: true })
+                });
+                if (resp.ok) {
+                    loadContractNotes(currentNotesContractId);
+                    showToast('Đã đánh dấu hoàn thành', 'success');
+                }
+            } catch (e) { showToast('Lỗi cập nhật ghi chú', 'error'); }
+        }
+
+        async function deleteNote(noteId) {
+            var token = localStorage.getItem('token');
+            try {
+                var resp = await fetch('/v1/contracts/' + currentNotesContractId + '/notes/' + noteId, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (resp.ok) {
+                    loadContractNotes(currentNotesContractId);
+                    showToast('Đã xóa ghi chú', 'success');
+                }
+            } catch (e) { showToast('Lỗi xóa ghi chú', 'error'); }
+        }
+
+        function injectNotesPanel(contractId) {
+            var existing = document.querySelector('.contract-notes-panel');
+            if (existing) existing.remove();
+
+            var contentArea = document.querySelector('.document-content-area');
+            if (!contentArea) return;
+
+            var notesHtml = '<div class="contract-notes-panel">' +
+                '<div class="notes-header">' +
+                '<h3>📝 Ghi chú</h3>' +
+                '<button class="btn-sm" onclick="addContractNote()">+ Thêm</button>' +
+                '</div>' +
+                '<div class="notes-list" id="contractNotesList"><div style="text-align:center;padding:1rem;color:var(--text-muted);font-size:0.82rem">Đang tải...</div></div>' +
+                '<div class="note-input-area hidden" id="noteInputArea">' +
+                '<select id="noteType">' +
+                '<option value="note">📝 Ghi chú</option>' +
+                '<option value="warning">⚠️ Cảnh báo</option>' +
+                '<option value="action">🎯 Cần làm</option>' +
+                '</select>' +
+                '<textarea id="noteText" placeholder="Nhập ghi chú..." rows="2"></textarea>' +
+                '<div class="note-actions">' +
+                '<button class="btn-sm" onclick="saveNote()">💾 Lưu</button>' +
+                '<button class="btn-sm btn-ghost" onclick="cancelNote()">Hủy</button>' +
+                '</div>' +
+                '</div>' +
+                '</div>';
+            contentArea.insertAdjacentHTML('beforeend', notesHtml);
+            loadContractNotes(contractId);
+        }
+
+        // Hook into contract tab opening to inject notes
+        var _originalOpenContractTab = typeof openContractTab === 'function' ? openContractTab : null;
+        if (_originalOpenContractTab) {
+            var _wrappedOpenContractTab = openContractTab;
+            openContractTab = async function(contractId) {
+                await _wrappedOpenContractTab(contractId);
+                setTimeout(function() { injectNotesPanel(contractId); }, 500);
+            };
+        }
+
+        // ===== FEATURE: AI INSIGHTS =====
+        async function loadInsights() {
+            var token = localStorage.getItem('token');
+            try {
+                var resp = await fetch('/v1/insights', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!resp.ok) {
+                    renderInsightsFallback();
+                    return;
+                }
+                var data = await resp.json();
+                var el = document.getElementById('insightsList');
+                if (!el) return;
+
+                var insights = data.insights || [];
+                if (insights.length === 0) {
+                    el.innerHTML = '<div style="padding:1rem;text-align:center;color:var(--text-muted)">Không có gợi ý mới 🎉</div>';
+                    return;
+                }
+                el.innerHTML = insights.map(function(i) {
+                    return '<div class="insight-card ' + (i.severity || 'info') + '" onclick="handleInsightAction(\'' + ((i.action && i.action.type) || '') + '\')">' +
+                        '<div class="insight-icon">' + (i.icon || '💡') + '</div>' +
+                        '<div class="insight-info">' +
+                        '<div class="insight-title">' + escapeHtml(i.title || '') + '</div>' +
+                        '<div class="insight-desc">' + escapeHtml(i.description || '') + '</div>' +
+                        '</div>' +
+                        '</div>';
+                }).join('');
+            } catch (e) {
+                renderInsightsFallback();
+            }
+        }
+
+        function renderInsightsFallback() {
+            var el = document.getElementById('insightsList');
+            if (!el) return;
+            // Build insights from local data
+            var insights = [];
+            var expired = allContracts.filter(function(c) {
+                return c.end_date && new Date(c.end_date) < new Date();
+            });
+            if (expired.length > 0) {
+                insights.push({ icon: '⚠️', title: expired.length + ' hợp đồng đã hết hạn', description: 'Cần kiểm tra và gia hạn hoặc thanh lý', severity: 'warning', actionType: 'open_risk_dashboard' });
+            }
+            var expiring = allContracts.filter(function(c) {
+                if (!c.end_date) return false;
+                var days = Math.floor((new Date(c.end_date) - new Date()) / 86400000);
+                return days >= 0 && days <= 30;
+            });
+            if (expiring.length > 0) {
+                insights.push({ icon: '⏰', title: expiring.length + ' hợp đồng sắp hết hạn', description: 'Trong vòng 30 ngày tới', severity: 'warning', actionType: 'open_contracts' });
+            }
+            if (allContracts.length === 0) {
+                insights.push({ icon: '📄', title: 'Chưa có hợp đồng nào', description: 'Upload hợp đồng đầu tiên để bắt đầu', severity: 'info', actionType: 'open_contracts' });
+            }
+            if (insights.length === 0) {
+                insights.push({ icon: '🎉', title: 'Mọi thứ đang tốt!', description: 'Không có cảnh báo nào cần chú ý', severity: 'success', actionType: '' });
+            }
+            el.innerHTML = insights.map(function(i) {
+                return '<div class="insight-card ' + (i.severity || 'info') + '" onclick="handleInsightAction(\'' + (i.actionType || '') + '\')">' +
+                    '<div class="insight-icon">' + i.icon + '</div>' +
+                    '<div class="insight-info">' +
+                    '<div class="insight-title">' + i.title + '</div>' +
+                    '<div class="insight-desc">' + i.description + '</div>' +
+                    '</div>' +
+                    '</div>';
+            }).join('');
+        }
+
+        function handleInsightAction(type) {
+            switch (type) {
+                case 'open_risk_dashboard': openRiskDashboard(); break;
+                case 'open_contracts': openTabByType('contracts'); break;
+                case 'open_analytics': openAnalytics(); break;
+                case 'open_settings':
+                    var settingsBtn = document.querySelector('[data-panel="settings"]');
+                    if (settingsBtn) settingsBtn.click();
+                    else openSettingsModal();
+                    break;
+            }
+        }
+
+        // ===== FEATURE: CONTRACT VERSION HISTORY =====
+        async function loadContractVersions(contractId) {
+            var token = localStorage.getItem('token');
+            try {
+                var resp = await fetch('/v1/contracts/' + contractId + '/versions', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!resp.ok) return;
+                var data = await resp.json();
+                var versions = data.versions || [];
+                if (versions.length <= 1) return;
+
+                var tabHeader = document.querySelector('.document-toolbar');
+                if (!tabHeader) return;
+
+                var existingSelector = tabHeader.querySelector('.version-selector');
+                if (existingSelector) existingSelector.remove();
+
+                var versionHtml = '<div class="version-selector">' +
+                    '<select onchange="switchContractVersion(\'' + contractId + '\', this.value)">' +
+                    versions.map(function(v) {
+                        return '<option value="' + v.version + '" ' + (v.is_current ? 'selected' : '') + '>' +
+                            'v' + v.version + (v.is_current ? ' (hiện tại)' : '') + ' — ' + (v.filename || 'N/A') +
+                            '</option>';
+                    }).join('') +
+                    '</select>' +
+                    '<button class="btn-sm" onclick="uploadNewVersion(\'' + contractId + '\')">📤 Phiên bản mới</button>' +
+                    '</div>';
+                tabHeader.insertAdjacentHTML('beforeend', versionHtml);
+            } catch (e) { console.error('Load versions error:', e); }
+        }
+
+        async function switchContractVersion(contractId, version) {
+            showToast('Đang chuyển sang phiên bản v' + version, 'info');
+            // Re-fetch contract with version param
+            var token = localStorage.getItem('token');
+            try {
+                var resp = await fetch('/v1/contracts/' + contractId + '?version=' + version, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (resp.ok) {
+                    showToast('Đã chuyển sang v' + version, 'success');
+                }
+            } catch (e) { showToast('Lỗi chuyển phiên bản', 'error'); }
+        }
+
+        function uploadNewVersion(contractId) {
+            openUploadModal();
+            showToast('Upload file mới cho hợp đồng này', 'info');
+        }
+
+        // ===== FEATURE: CHAT EXPORT =====
+        async function exportCurrentChat() {
+            if (!currentSessionId) { showToast('Chưa có cuộc hội thoại', 'info'); return; }
+            var token = localStorage.getItem('token');
+            try {
+                var resp = await fetch('/v1/chats/' + currentSessionId + '/export', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!resp.ok) {
+                    // Fallback: export from DOM
+                    exportChatFromDOM();
+                    return;
+                }
+                var blob = await resp.blob();
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = 'chat_' + currentSessionId.slice(0, 8) + '.md';
+                a.click();
+                URL.revokeObjectURL(url);
+                showToast('Đã xuất cuộc hội thoại!', 'success');
+            } catch (e) {
+                exportChatFromDOM();
+            }
+        }
+
+        function exportChatFromDOM() {
+            var messages = document.querySelectorAll('#chatMessages .message');
+            if (messages.length === 0) { showToast('Chưa có tin nhắn', 'info'); return; }
+            var md = '# Cuộc hội thoại - AI Legal Agent\n\nXuất lúc: ' + new Date().toLocaleString('vi-VN') + '\n\n---\n\n';
+            messages.forEach(function(msg) {
+                var isUser = msg.classList.contains('message-user');
+                var textEl = msg.querySelector('.message-text');
+                if (textEl) {
+                    md += '**' + (isUser ? 'Bạn' : 'AI Legal Agent') + ':**\n\n' + textEl.textContent.trim() + '\n\n---\n\n';
+                }
+            });
+            var blob = new Blob([md], { type: 'text/markdown' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = 'chat_' + (currentSessionId ? currentSessionId.slice(0, 8) : 'export') + '.md';
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Đã xuất cuộc hội thoại!', 'success');
+        }
+
+        // ===== HOOK: Add onboarding + insights to showDashboard =====
+        var _originalShowDashboard = showDashboard;
+        showDashboard = function() {
+            _originalShowDashboard();
+            setTimeout(function() {
+                checkOnboarding();
+                loadInsights();
+            }, 500);
+        };
+
+        // ===== HOOK: Keyboard shortcut for ? and Escape on shortcuts modal =====
+        var _originalKeydownHandler = null;
+        document.addEventListener('keydown', function(e) {
+            // ? key shows shortcuts (not in input/textarea)
+            if (e.key === '?' && !e.ctrlKey && !e.metaKey &&
+                document.activeElement.tagName !== 'INPUT' &&
+                document.activeElement.tagName !== 'TEXTAREA' &&
+                document.activeElement.tagName !== 'SELECT') {
+                document.getElementById('shortcutsModal').classList.toggle('hidden');
+                return;
+            }
+            // Escape closes shortcuts modal
+            if (e.key === 'Escape') {
+                var shortcutsModal = document.getElementById('shortcutsModal');
+                if (shortcutsModal && !shortcutsModal.classList.contains('hidden')) {
+                    shortcutsModal.classList.add('hidden');
+                    return;
+                }
+                var onboardingOverlay = document.getElementById('onboardingOverlay');
+                if (onboardingOverlay && !onboardingOverlay.classList.contains('hidden')) {
+                    closeOnboarding();
+                    return;
+                }
+            }
+        });
     </script>
 </body>
 </html>

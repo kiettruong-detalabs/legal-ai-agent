@@ -459,18 +459,24 @@ def multi_query_search(question: str, domains: Optional[List[str]] = None, limit
 
 @app.get("/v1/health")
 async def health():
-    with get_db() as conn:
-        cur = conn.cursor()
-        cur.execute("SELECT COUNT(*) FROM law_documents")
-        doc_count = cur.fetchone()[0]
-        cur.execute("SELECT COUNT(*) FROM law_chunks")
-        chunk_count = cur.fetchone()[0]
-    
-    return {
-        "status": "healthy",
-        "database": {"documents": doc_count, "chunks": chunk_count},
-        "ai_engine": "claude-sonnet-4"
-    }
+    try:
+        with get_db() as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT COUNT(*) FROM law_documents")
+            doc_count = cur.fetchone()[0]
+            cur.execute("SELECT COUNT(*) FROM law_chunks")
+            chunk_count = cur.fetchone()[0]
+        return {
+            "status": "healthy",
+            "database": {"documents": doc_count, "chunks": chunk_count},
+            "ai_engine": "claude-sonnet-4"
+        }
+    except Exception as e:
+        return {
+            "status": "degraded",
+            "database": {"error": str(e)},
+            "ai_engine": "claude-sonnet-4"
+        }
 
 @app.post("/v1/legal/ask", response_model=LegalResponse)
 async def legal_ask(query: LegalQuery, company: dict = Depends(verify_api_key)):

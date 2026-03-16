@@ -8,6 +8,7 @@ import httpx
 import os
 from typing import Optional, List, AsyncGenerator
 from psycopg2.extras import RealDictCursor
+from .company_memory import get_company_memory, update_company_memory, init_memory
 
 # ============================================
 # Shared DB & Claude config (imported from main)
@@ -31,6 +32,8 @@ def init_agent(get_db_fn, multi_query_search_fn, search_laws_fn, detect_domain_f
     _search_laws = search_laws_fn
     _detect_domain = detect_domain_fn
     _fetch_company_context = fetch_company_context_fn
+    # Initialize company memory with same DB function
+    init_memory(get_db_fn)
 
 
 # ============================================
@@ -245,6 +248,103 @@ def is_simple_question(question: str) -> bool:
             if p in q:
                 return True
     return False
+
+
+def is_followup_question(question: str, chat_history: list = None) -> bool:
+    """Check if this is a follow-up that doesn't need tools"""
+    q = question.strip().lower()
+    followup_markers = [
+        "giải thích thêm", "chi tiết hơn", "ý bạn là gì",
+        "ví dụ", "ngoại lệ", "trường hợp", "còn gì nữa",
+        "tóm tắt lại", "ngắn gọn hơn", "dịch sang tiếng anh",
+        "có gì khác", "so sánh", "tại sao", "cụ thể hơn",
+        "nói rõ hơn", "ý nghĩa", "hiểu thế nào", "áp dụng",
+        "thực tế", "ví dụ cụ thể", "giải thích", "nghĩa là gì"
+    ]
+    if any(m in q for m in followup_markers) and chat_history and len(chat_history) >= 2:
+        return True
+    return False
+
+
+def generate_quick_replies(question: str, answer: str, tools_used: list) -> list:
+    """Generate contextual quick reply suggestions based on tools used and context"""
+    suggestions = []
+
+    if 'search_law' in tools_used:
+        suggestions.extend([
+            {"text": "Phân tích chi tiết hơn", "icon": "📊"},
+            {"text": "Điều khoản liên quan", "icon": "🔗"},
+            {"text": "So sánh với luật trước đó", "icon": "⚖️"}
+        ])
+    elif 'read_contract' in tools_used or 'analyze_contract_risk' in tools_used:
+        suggestions.extend([
+            {"text": "Đề xuất sửa đổi cụ thể", "icon": "✏️"},
+            {"text": "Xuất báo cáo rà soát", "icon": "📥"},
+            {"text": "So sánh với hợp đồng khác", "icon": "🔄"}
+        ])
+    elif 'list_contracts' in tools_used:
+        suggestions.extend([
+            {"text": "Phân tích rủi ro tổng thể", "icon": "⚠️"},
+            {"text": "Hợp đồng nào sắp hết hạn?", "icon": "📅"},
+            {"text": "So sánh tất cả hợp đồng", "icon": "📊"}
+        ])
+    elif 'draft_document' in tools_used:
+        suggestions.extend([
+            {"text": "Chỉnh sửa nội dung", "icon": "✏️"},
+            {"text": "Thêm điều khoản bảo mật", "icon": "🔒"},
+            {"text": "Xuất ra Word", "icon": "📄"}
+        ])
+    elif 'search_company_docs' in tools_used:
+        suggestions.extend([
+            {"text": "Phân tích tài liệu này", "icon": "📊"},
+            {"text": "Tìm tài liệu liên quan", "icon": "🔍"},
+            {"text": "So sánh với quy định pháp luật", "icon": "⚖️"}
+        ])
+    else:
+        # General/greeting
+        suggestions.extend([
+            {"text": "Tra cứu luật lao động", "icon": "🔍"},
+            {"text": "Rà soát hợp đồng", "icon": "📄"},
+            {"text": "Soạn văn bản mới", "icon": "✍️"}
+        ])
+
+    return suggestions[:4]  # Max 4 suggestions
+
+
+def extract_inline_actions(answer_text: str, tools_used: list, tool_results: list) -> list:
+    """Extract actionable items from agent response and tool results"""
+    actions = []
+
+    for result in tool_results:
+        tool_name = result.get("tool", "")
+        data = result.get("data", {})
+
+        if tool_name == "list_contracts":
+            contracts = data.get("contracts", [])
+            for contract in contracts[:3]:
+                actions.append({
+                    "type": "view_contract",
+                    "id": str(contract.get("id", "")),
+                    "label": f"📄 {str(contract.get('name', ''))[:40]}"
+                })
+        elif tool_name == "read_contract" or tool_name == "analyze_contract_risk":
+            contract = data.get("contract", {})
+            if contract.get("id"):
+                actions.append({
+                    "type": "view_contract",
+                    "id": str(contract["id"]),
+                    "label": f"📄 {str(contract.get('name', ''))[:40]}"
+                })
+        elif tool_name == "search_company_docs":
+            docs = data.get("documents", [])
+            for doc in docs[:3]:
+                actions.append({
+                    "type": "view_document",
+                    "id": str(doc.get("id", "")),
+                    "label": f"📋 {str(doc.get('name', ''))[:40]}"
+                })
+
+    return actions
 
 
 async def quick_answer(question: str, chat_history: list = None) -> dict:
@@ -687,9 +787,23 @@ async def run_agent(
 ) -> dict:
     """
     Agent loop with fast path for simple questions.
+    Includes company memory injection.
     """
+    # Build system prompt with company memory
+    system_prompt = AGENT_SYSTEM_PROMPT
+    try:
+        memory_context = await get_company_memory(company_id)
+        if memory_context:
+            system_prompt = system_prompt + "\n\n" + memory_context
+    except Exception:
+        pass
+
     # Fast path — skip tool loop for simple greetings/acknowledgments
     if is_simple_question(question):
+        return await quick_answer(question, chat_history)
+
+    # Follow-up fast path
+    if is_followup_question(question, chat_history):
         return await quick_answer(question, chat_history)
     
     messages = []
@@ -704,7 +818,7 @@ async def run_agent(
     max_iterations = 5
 
     for i in range(max_iterations):
-        response = await _call_claude_with_tools(messages, TOOLS)
+        response = await _call_claude_with_tools(messages, TOOLS, system=system_prompt)
 
         usage = response.get("usage", {})
         total_input_tokens += usage.get("input_tokens", 0)
@@ -883,8 +997,18 @@ async def run_agent_stream_final_text(
 ) -> AsyncGenerator[str, None]:
     """
     Enhanced streaming: tool calls use non-streaming, final text uses true streaming.
-    Fast path for simple questions.
+    Fast path for simple questions and follow-ups.
+    Includes: company memory, contextual suggestions, inline actions.
     """
+    # Build system prompt with company memory
+    system_prompt = AGENT_SYSTEM_PROMPT
+    try:
+        memory_context = await get_company_memory(company_id)
+        if memory_context:
+            system_prompt = system_prompt + "\n\n" + memory_context
+    except Exception as e:
+        print(f"Error loading company memory: {e}")
+
     # Fast path — simple questions skip tools entirely
     if is_simple_question(question):
         messages = []
@@ -893,11 +1017,40 @@ async def run_agent_stream_final_text(
                 messages.append({"role": msg["role"], "content": msg["content"]})
         messages.append({"role": "user", "content": question})
         
-        async for event in _stream_final_text(messages):
+        async for event in _stream_final_text(messages, system=system_prompt):
             yield event
+        # Emit suggestions for simple/greeting messages
+        suggestions = generate_quick_replies(question, "", [])
+        yield f"data: {json.dumps({'type': 'suggestions', 'items': suggestions}, ensure_ascii=False)}\n\n"
         yield f"data: {json.dumps({'type': 'done'})}\n\n"
         return
-    
+
+    # Follow-up fast path — skip tools for conversational follow-ups
+    if is_followup_question(question, chat_history):
+        messages = []
+        if chat_history:
+            for msg in chat_history:
+                messages.append({"role": msg["role"], "content": msg["content"]})
+        messages.append({"role": "user", "content": question})
+
+        full_text_parts = []
+        async for event in _stream_final_text(messages, system=system_prompt):
+            yield event
+            # Collect text for suggestions
+            if event.startswith("data: "):
+                try:
+                    evt = json.loads(event[6:].strip())
+                    if evt.get("type") == "delta":
+                        full_text_parts.append(evt.get("text", ""))
+                except:
+                    pass
+
+        answer_text = "".join(full_text_parts)
+        suggestions = generate_quick_replies(question, answer_text, [])
+        yield f"data: {json.dumps({'type': 'suggestions', 'items': suggestions}, ensure_ascii=False)}\n\n"
+        yield f"data: {json.dumps({'type': 'done', 'session_id': session_id})}\n\n"
+        return
+
     messages = []
     if chat_history:
         for msg in chat_history:
@@ -905,11 +1058,13 @@ async def run_agent_stream_final_text(
     messages.append({"role": "user", "content": question})
 
     all_citations = []
+    all_tools_used = []
+    all_tool_results_data = []  # For inline actions extraction
     max_iterations = 5
     full_response_parts = []
 
     for iteration in range(max_iterations):
-        response = await _call_claude_with_tools(messages, TOOLS)
+        response = await _call_claude_with_tools(messages, TOOLS, system=system_prompt)
         content_blocks = response.get("content", [])
 
         tool_uses = [b for b in content_blocks if b.get("type") == "tool_use"]
@@ -933,7 +1088,7 @@ async def run_agent_stream_final_text(
 
             # Stream the final text using true streaming
             try:
-                async for event in _call_claude_with_tools_stream(messages, TOOLS):
+                async for event in _call_claude_with_tools_stream(messages, TOOLS, system=system_prompt):
                     event_type = event.get("type", "")
                     if event_type == "content_block_delta":
                         delta = event.get("delta", {})
@@ -953,6 +1108,16 @@ async def run_agent_stream_final_text(
                     full_response_parts.append(chunk)
                     yield f"data: {json.dumps({'type': 'delta', 'text': chunk}, ensure_ascii=False)}\n\n"
 
+            # Emit inline actions from tool results
+            answer_text = "".join(full_response_parts)
+            inline_actions = extract_inline_actions(answer_text, all_tools_used, all_tool_results_data)
+            if inline_actions:
+                yield f"data: {json.dumps({'type': 'inline_actions', 'actions': inline_actions}, ensure_ascii=False)}\n\n"
+
+            # Emit contextual quick reply suggestions
+            suggestions = generate_quick_replies(question, answer_text, all_tools_used)
+            yield f"data: {json.dumps({'type': 'suggestions', 'items': suggestions}, ensure_ascii=False)}\n\n"
+
             yield f"data: {json.dumps({'type': 'done', 'session_id': session_id, 'citations': all_citations}, ensure_ascii=False)}\n\n"
             return
 
@@ -965,6 +1130,10 @@ async def run_agent_stream_final_text(
             tool_input = tool_use.get("input", {})
             tool_id = tool_use.get("id", "")
 
+            # Track tools used
+            if tool_name not in all_tools_used:
+                all_tools_used.append(tool_name)
+
             label = TOOL_STATUS_LABELS.get(tool_name, f"🔧 Đang xử lý {tool_name}...")
             yield f"data: {json.dumps({'type': 'tool_status', 'tool': tool_name, 'status': 'running', 'label': label}, ensure_ascii=False)}\n\n"
 
@@ -975,6 +1144,9 @@ async def run_agent_stream_final_text(
 
             if tool_name == "search_law" and "citations" in result:
                 all_citations.extend(result["citations"])
+
+            # Store tool result data for inline actions extraction
+            all_tool_results_data.append({"tool": tool_name, "data": result})
 
             yield f"data: {json.dumps({'type': 'tool_status', 'tool': tool_name, 'status': 'done'}, ensure_ascii=False)}\n\n"
 

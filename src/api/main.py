@@ -1893,6 +1893,61 @@ async def delete_annotation(doc_id: str, annotation_id: str, company: dict = Dep
     return {"message": "Đã xóa annotation"}
 
 
+# ============================================
+# Feature: Notifications Endpoint
+# ============================================
+
+@app.get("/v1/notifications")
+async def get_notifications(company: dict = Depends(verify_api_key)):
+    """Get notifications for the company — expiring contracts, overdue items"""
+    from datetime import date as date_type
+    notifications = []
+
+    with get_db() as conn:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        # Expiring contracts (within 30 days)
+        cur.execute("""
+            SELECT id, name, end_date
+            FROM contracts
+            WHERE company_id = %s AND status != 'deleted'
+            AND end_date IS NOT NULL
+            AND end_date <= CURRENT_DATE + INTERVAL '30 days'
+            AND end_date >= CURRENT_DATE
+            ORDER BY end_date ASC
+        """, (company["company_id"],))
+
+        for c in cur.fetchall():
+            days = (c['end_date'] - date_type.today()).days
+            notifications.append({
+                "type": "expiring_contract",
+                "severity": "warning" if days > 7 else "critical",
+                "title": f"HĐ sắp hết hạn: {c['name']}",
+                "detail": f"Còn {days} ngày",
+                "action": {"type": "view_contract", "id": str(c['id'])}
+            })
+
+        # Overdue contracts
+        cur.execute("""
+            SELECT id, name, end_date
+            FROM contracts
+            WHERE company_id = %s AND status != 'deleted'
+            AND end_date IS NOT NULL AND end_date < CURRENT_DATE
+            ORDER BY end_date DESC LIMIT 5
+        """, (company["company_id"],))
+
+        for c in cur.fetchall():
+            notifications.append({
+                "type": "overdue_contract",
+                "severity": "critical",
+                "title": f"HĐ đã hết hạn: {c['name']}",
+                "detail": f"Hết hạn {c['end_date']}",
+                "action": {"type": "view_contract", "id": str(c['id'])}
+            })
+
+    return {"notifications": notifications, "count": len(notifications)}
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8080)

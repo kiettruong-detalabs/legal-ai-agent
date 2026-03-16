@@ -123,11 +123,11 @@ async def landing_page():
 # ============================================
 
 DB_CONFIG = {
-    "host": os.getenv("SUPABASE_DB_HOST", "db.chiokotzjtjwfodryfdt.supabase.co"),
+    "host": os.getenv("SUPABASE_DB_HOST", "localhost"),
     "port": int(os.getenv("SUPABASE_DB_PORT", "5432")),
     "dbname": "postgres",
     "user": "postgres",
-    "password": os.getenv("SUPABASE_DB_PASSWORD", "Hl120804@.,?"),
+    "password": os.getenv("SUPABASE_DB_PASSWORD", ""),
     "sslmode": "require"
 }
 

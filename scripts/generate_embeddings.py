@@ -1,3 +1,4 @@
+import os
 """Generate embeddings for law_chunks using local GPU model"""
 import psycopg2
 import numpy as np
@@ -5,9 +6,9 @@ from sentence_transformers import SentenceTransformer
 import time
 
 DB_CONFIG = {
-    "host": "db.chiokotzjtjwfodryfdt.supabase.co",
+    "host": os.getenv("SUPABASE_DB_HOST", "localhost"),
     "port": 5432, "dbname": "postgres",
-    "user": "postgres", "password": "Hl120804@.,?",
+    "user": "postgres", "password": os.getenv("SUPABASE_DB_PASSWORD", ""),
     "sslmode": "require"
 }
 

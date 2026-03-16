@@ -5,7 +5,7 @@ Run this on Windows (where you have IPv4+IPv6):
 import psycopg2
 import os
 
-DB_HOST = "db.chiokotzjtjwfodryfdt.supabase.co"
+DB_HOST = os.getenv("SUPABASE_DB_HOST", "localhost")
 DB_PORT = 5432
 DB_NAME = "postgres"
 DB_USER = "postgres"

@@ -6,11 +6,11 @@ import psycopg2
 import os
 
 DB_CONFIG = {
-    "host": "db.chiokotzjtjwfodryfdt.supabase.co",
+    "host": os.getenv("SUPABASE_DB_HOST", "localhost"),
     "port": 5432,
     "dbname": "postgres",
     "user": "postgres",
-    "password": "Hl120804@.,?",
+    "password": os.getenv("SUPABASE_DB_PASSWORD", ""),
     "sslmode": "require"
 }
 

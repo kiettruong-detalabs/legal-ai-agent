@@ -8,7 +8,7 @@
 
 - **Email:** bi@hrvn.vn
 - **Password:** Test1234!
-- **API Key:** lak_971cbf08c82f678abdf5d112c4e3c6be19f35c2ed17da910
+- **API Key:** lak_your_api_key_here
 
 ## Features
 

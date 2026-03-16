@@ -158,11 +158,11 @@ Detect query intent and boost relevant law types:
 
 ```bash
 # 1. Backup current function
-pg_dump -h db.chiokotzjtjwfodryfdt.supabase.co -U postgres \
+pg_dump -h your-project.supabase.co -U postgres \
   --schema-only --table=search_law > backup_search_law.sql
 
 # 2. Deploy optimized function
-psql "postgresql://postgres:PASSWORD@db.chiokotzjtjwfodryfdt.supabase.co:5432/postgres?sslmode=require" \
+psql "postgresql://postgres:PASSWORD@your-project.supabase.co:5432/postgres?sslmode=require" \
   < scripts/migration_search_fast_final.sql
 
 # 3. Test

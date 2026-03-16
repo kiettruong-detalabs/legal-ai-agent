@@ -143,7 +143,7 @@ No server restart needed - main process will auto-reload changes on next request
 
 ### 🔧 Configuration
 Already configured:
-- Database: Supabase (db.chiokotzjtjwfodryfdt.supabase.co)
+- Database: Supabase (your-project.supabase.co)
 - Claude OAuth: Token configured
 - Model: claude-sonnet-4-20250514
 - Header: anthropic-beta: oauth-2025-04-20

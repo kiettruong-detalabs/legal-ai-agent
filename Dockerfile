@@ -1,5 +1,13 @@
 FROM python:3.11-slim
+
 WORKDIR /app
-RUN pip install --no-cache-dir fastapi uvicorn
-COPY test_app.py entrypoint.py ./
-CMD ["python3", "entrypoint.py"]
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY src/ ./src/
+COPY static/ ./static/
+
+EXPOSE 8080
+
+CMD ["python3", "-m", "uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8080"]

@@ -1,8 +1,10 @@
 """
-Platform logging middleware
+Platform logging middleware - FIXED version
 Logs all API requests to platform_logs table
+Uses background task to avoid Starlette body consumption bug
 """
-from fastapi import Request
+from fastapi import Request, Response
+from starlette.background import BackgroundTask
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 import time
@@ -10,7 +12,6 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 import os
 from contextlib import contextmanager
-import asyncio
 import jwt
 
 # Database config
@@ -79,17 +80,8 @@ def extract_user_from_request(request: Request) -> tuple:
     
     return company_id, user_id
 
-async def log_request_async(log_data: dict):
-    """Async logging to database (doesn't block response)"""
-    try:
-        loop = asyncio.get_event_loop()
-        await loop.run_in_executor(None, log_request_sync, log_data)
-    except Exception as e:
-        # Silent fail - logging should never break the API
-        print(f"Logging error: {e}")
-
 def log_request_sync(log_data: dict):
-    """Sync database insert"""
+    """Sync database insert - called as background task"""
     try:
         with get_db() as conn:
             cur = conn.cursor()
@@ -112,12 +104,13 @@ def log_request_sync(log_data: dict):
             ))
             conn.commit()
     except Exception as e:
+        # Silent fail - logging should never break the API
         print(f"Failed to log request: {e}")
 
 class PlatformLoggingMiddleware(BaseHTTPMiddleware):
     """
     Middleware to log all API requests to platform_logs table
-    Captures: endpoint, method, status, response time, company_id, user_id, IP
+    FIXED: Uses background task to avoid body consumption bug
     """
     
     def __init__(self, app: ASGIApp, exclude_paths: list = None):
@@ -136,13 +129,13 @@ class PlatformLoggingMiddleware(BaseHTTPMiddleware):
         # Record start time
         start_time = time.time()
         
-        # Extract user context
+        # Extract user context (before processing request)
         company_id, user_id = extract_user_from_request(request)
         
         # Get client IP
         ip_address = request.client.host if request.client else None
         
-        # Process request
+        # Process request - DON'T consume the body
         response = await call_next(request)
         
         # Calculate response time
@@ -157,11 +150,13 @@ class PlatformLoggingMiddleware(BaseHTTPMiddleware):
             "status_code": response.status_code,
             "response_time_ms": response_time_ms,
             "ip_address": ip_address,
-            "input_tokens": 0,  # TODO: Extract from response if available
+            "input_tokens": 0,
             "output_tokens": 0
         }
         
-        # Log asynchronously (don't block response)
-        asyncio.create_task(log_request_async(log_data))
+        # Add background task to log (doesn't block response)
+        # This is the FIX: use background_task parameter instead of asyncio.create_task
+        # This way Starlette handles it properly without body consumption issues
+        response.background = BackgroundTask(log_request_sync, log_data)
         
         return response

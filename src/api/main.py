@@ -21,6 +21,10 @@ import time
 import os
 from contextlib import contextmanager
 import jwt
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET", "your-super-secret-jwt-key-change-in-production")
 
@@ -34,12 +38,11 @@ app = FastAPI(
     version="2.0.0"
 )
 
-# Add logging middleware (before CORS)
-# DISABLED FOR DEBUG
-# app.add_middleware(
-#     PlatformLoggingMiddleware,
-#     exclude_paths=["/health", "/docs", "/openapi.json", "/redoc", "/static", "/"]
-# )
+# Add logging middleware (before CORS) - FIXED version with background tasks
+app.add_middleware(
+    PlatformLoggingMiddleware,
+    exclude_paths=["/health", "/docs", "/openapi.json", "/redoc", "/static", "/"]
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -187,13 +190,15 @@ class LegalResponse(BaseModel):
 # ============================================
 
 CLAUDE_OAUTH_TOKEN = os.getenv("CLAUDE_OAUTH_TOKEN", "")
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 CLAUDE_API_URL = "https://api.anthropic.com/v1/messages"
 
 async def call_claude(system_prompt: str, user_message: str, max_tokens: int = 4096) -> dict:
-    """Call Claude via OAuth token"""
+    """Call Claude via API key"""
+    # Use ANTHROPIC_API_KEY if available, otherwise fall back to CLAUDE_OAUTH_TOKEN
+    api_key = ANTHROPIC_API_KEY or CLAUDE_OAUTH_TOKEN
     headers = {
-        "Authorization": f"Bearer {CLAUDE_OAUTH_TOKEN}",
-        "anthropic-beta": "oauth-2025-04-20",
+        "x-api-key": api_key,
         "anthropic-version": "2023-06-01",
         "content-type": "application/json"
     }
@@ -537,6 +542,63 @@ CÁC NGUỒN LUẬT LIÊN QUAN:
 Hãy trả lời câu hỏi trên theo đúng nguyên tắc đã nêu."""
 
     result = await call_claude(system_prompt, user_message)
+    
+    # Chat history auto-save (if user_id exists from Bearer token)
+    session_id = None
+    user_id = company.get("user_id")
+    
+    if user_id:
+        with get_db() as conn:
+            cur = conn.cursor(cursor_factory=RealDictCursor)
+            
+            # Get or create active session for this user
+            cur.execute("""
+                SELECT id FROM chat_sessions
+                WHERE user_id = %s AND company_id = %s AND agent_type = 'qa' AND status = 'active'
+                ORDER BY last_message_at DESC NULLS LAST
+                LIMIT 1
+            """, (user_id, company["company_id"]))
+            
+            session = cur.fetchone()
+            if session:
+                session_id = session["id"]
+            else:
+                # Create new session
+                cur.execute("""
+                    INSERT INTO chat_sessions (company_id, user_id, agent_type, title, status)
+                    VALUES (%s, %s, 'qa', %s, 'active')
+                    RETURNING id
+                """, (company["company_id"], user_id, f"Q&A - {query.question[:50]}..."))
+                session_id = cur.fetchone()["id"]
+            
+            # Save user question
+            cur.execute("""
+                INSERT INTO messages (session_id, role, content, tokens_used, model)
+                VALUES (%s, 'user', %s, 0, '')
+            """, (session_id, query.question))
+            
+            # Save assistant answer with citations
+            cur.execute("""
+                INSERT INTO messages (session_id, role, content, citations, confidence, tokens_used, model)
+                VALUES (%s, 'assistant', %s, %s, %s, %s, %s)
+            """, (
+                session_id, 
+                result["content"], 
+                json.dumps(citations),
+                0.85 if sources else 0.5,
+                result["input_tokens"] + result["output_tokens"],
+                result["model"]
+            ))
+            
+            # Update session message count and last message time
+            cur.execute("""
+                UPDATE chat_sessions 
+                SET message_count = message_count + 2,
+                    last_message_at = now()
+                WHERE id = %s
+            """, (session_id,))
+            
+            conn.commit()
     
     # Update usage
     with get_db() as conn:

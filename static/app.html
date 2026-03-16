@@ -31,6 +31,7 @@
             --success: #4ade80;
             --warning: #fbbf24;
             --danger: #f87171;
+            --code-bg: #1e1e2e;
         }
 
         body {
@@ -236,6 +237,7 @@
             padding: 0.25rem;
             font-size: 1.25rem;
             transition: color 0.15s ease;
+            display: none;
         }
 
         .sidebar-toggle:hover {
@@ -281,6 +283,76 @@
 
         .nav-item-icon {
             font-size: 1.125rem;
+        }
+
+        .chat-history-item {
+            padding: 0.625rem 1rem;
+            margin: 0 0.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .chat-history-item:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .chat-history-item.active {
+            background: var(--accent-bg);
+            border-left: 2px solid var(--accent);
+        }
+
+        .chat-history-title {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 0.25rem;
+        }
+
+        .chat-history-item.active .chat-history-title {
+            color: var(--accent);
+            font-weight: 500;
+        }
+
+        .chat-history-meta {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .chat-history-group {
+            margin-bottom: 1rem;
+        }
+
+        .chat-history-group-label {
+            padding: 0.5rem 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .new-chat-btn {
+            margin: 0.5rem;
+            padding: 0.625rem 1rem;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .new-chat-btn:hover {
+            background: var(--accent-hover);
         }
 
         .sidebar-user {
@@ -541,23 +613,35 @@
             color: var(--text-secondary);
         }
 
-        .message-text strong {
+        .message-text strong, .message-text b {
             color: var(--text-primary);
             font-weight: 600;
         }
 
         .message-text ul, .message-text ol {
             margin: 0.75rem 0;
-            padding-left: 1.5rem;
+            padding-left: 1.75rem;
             color: var(--text-secondary);
         }
 
         .message-text li {
             margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+        }
+
+        .message-text a {
+            color: var(--accent);
+            text-decoration: none;
+            transition: color 0.15s ease;
+        }
+
+        .message-text a:hover {
+            color: var(--accent-hover);
+            text-decoration: underline;
         }
 
         .message-text code {
-            background: var(--bg-tertiary);
+            background: var(--code-bg);
             color: var(--accent);
             padding: 0.2rem 0.4rem;
             border-radius: 4px;
@@ -566,7 +650,7 @@
         }
 
         .message-text pre {
-            background: var(--bg-tertiary);
+            background: var(--code-bg);
             border: 1px solid var(--border);
             padding: 1rem;
             border-radius: 8px;
@@ -579,6 +663,26 @@
             background: none;
             color: var(--text-primary);
             padding: 0;
+        }
+
+        .code-copy-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 0.375rem 0.625rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .code-copy-btn:hover {
+            border-color: var(--accent);
+            color: var(--text-primary);
         }
 
         .citations {
@@ -603,26 +707,68 @@
             color: var(--text-secondary);
         }
 
+        .citations-toggle {
+            transition: transform 0.2s ease;
+        }
+
+        .citations.expanded .citations-toggle {
+            transform: rotate(180deg);
+        }
+
         .citations-list {
             margin-top: 0.75rem;
             display: flex;
             flex-direction: column;
-            gap: 0.5rem;
+            gap: 0.75rem;
         }
 
-        .citation-item {
+        .citation-card {
             background: var(--bg-secondary);
             border: 1px solid var(--border);
             border-radius: 8px;
-            padding: 0.75rem;
-            font-size: 0.875rem;
-            color: var(--text-secondary);
+            padding: 1rem;
             transition: all 0.15s ease;
-            cursor: pointer;
         }
 
-        .citation-item:hover {
+        .citation-card:hover {
             border-color: var(--border-hover);
+        }
+
+        .citation-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.5rem;
+        }
+
+        .citation-law-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            flex: 1;
+        }
+
+        .citation-article {
+            background: var(--accent-bg);
+            color: var(--accent);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            white-space: nowrap;
+            margin-left: 0.5rem;
+        }
+
+        .citation-content {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .citation-law-number {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
         }
 
         .typing-indicator {
@@ -1132,7 +1278,7 @@
         }
 
         .code-example {
-            background: var(--bg-tertiary);
+            background: var(--code-bg);
             border: 1px solid var(--border);
             border-radius: 8px;
             padding: 1rem;
@@ -1204,6 +1350,10 @@
                 transform: translateX(0);
             }
 
+            .sidebar-toggle {
+                display: block;
+            }
+
             .main-content {
                 margin-left: 0;
             }
@@ -1216,8 +1366,16 @@
                 padding: 1rem;
             }
 
+            .chat-header {
+                padding: 1rem;
+            }
+
             .page-content {
                 padding: 1rem;
+            }
+
+            .page-header {
+                padding: 1.5rem 1rem;
             }
 
             .templates-grid {
@@ -1226,6 +1384,31 @@
 
             .message {
                 max-width: 100%;
+            }
+
+            .suggestion-chips {
+                grid-template-columns: 1fr;
+            }
+
+            .input-box {
+                padding: 0.625rem;
+            }
+
+            .input-icon {
+                display: none;
+            }
+
+            .page-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-input {
+                max-width: 100%;
+            }
+
+            .table-container {
+                overflow-x: auto;
             }
         }
 
@@ -1239,9 +1422,34 @@
         .mt-2 { margin-top: 1rem; }
         .mb-1 { margin-bottom: 0.5rem; }
         .mb-2 { margin-bottom: 1rem; }
+
+        /* Mobile hamburger */
+        .mobile-menu-btn {
+            display: none;
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 101;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 0.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.25rem;
+        }
+
+        @media (max-width: 768px) {
+            .mobile-menu-btn {
+                display: block;
+            }
+        }
     </style>
 </head>
 <body>
+    <!-- Mobile hamburger menu -->
+    <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
+
     <!-- ===== LOGIN PAGE ===== -->
     <div id="loginPage" class="auth-container">
         <div class="auth-box">
@@ -1309,14 +1517,19 @@
                     <span>⚖️</span>
                     <span>Legal AI</span>
                 </div>
-                <button class="sidebar-toggle" onclick="toggleSidebar()">≡</button>
+                <button class="sidebar-toggle" onclick="toggleSidebar()">✕</button>
             </div>
             
             <div class="sidebar-section">
-                <div class="section-label">Cuộc hội thoại</div>
-                <div class="nav-item active" onclick="showPage('chat')">
-                    <span class="nav-item-icon">💬</span>
-                    <span>Chat mới</span>
+                <button class="new-chat-btn" onclick="startNewChat()">
+                    ➕ Cuộc hội thoại mới
+                </button>
+            </div>
+
+            <div class="sidebar-section" id="chatHistorySection">
+                <div class="section-label">Lịch sử</div>
+                <div id="chatHistoryContainer">
+                    <!-- Chat history will be rendered here -->
                 </div>
             </div>
 
@@ -1357,14 +1570,14 @@
             <div id="chatPage" class="page active">
                 <div class="chat-container">
                     <div class="chat-header">
-                        <div class="chat-title">Cuộc hội thoại mới</div>
+                        <div class="chat-title" id="chatHeaderTitle">Cuộc hội thoại mới</div>
                         <div class="chat-actions">
-                            <button class="icon-btn" title="Cài đặt">⚙️</button>
+                            <button class="icon-btn" title="Cài đặt" onclick="showPage('settings')">⚙️</button>
                         </div>
                     </div>
 
                     <div class="chat-messages" id="chatMessages">
-                        <div class="chat-welcome">
+                        <div class="chat-welcome" id="chatWelcome">
                             <div class="welcome-card">
                                 <div class="welcome-icon">⚖️</div>
                                 <div class="welcome-title">Xin chào! Tôi là trợ lý pháp lý AI.</div>
@@ -1593,17 +1806,19 @@ console.log(data);</code></pre>
         let currentUser = null;
         let selectedDomain = 'all';
         let currentFilter = 'all';
+        let currentSessionId = null;
+        let chatSessions = [];
 
         // ===== TEMPLATES DATA =====
         const templates = [
-            { id: 1, icon: '📝', title: 'Hợp đồng lao động', description: 'Mẫu hợp đồng lao động theo Bộ luật Lao động 2019', prompt: 'Soạn hợp đồng lao động với các thông tin sau:' },
-            { id: 2, icon: '🤝', title: 'Hợp đồng dịch vụ', description: 'Hợp đồng cung cấp dịch vụ chuyên nghiệp', prompt: 'Soạn hợp đồng dịch vụ với các thông tin sau:' },
-            { id: 3, icon: '📋', title: 'Quyết định', description: 'Quyết định bổ nhiệm, khen thưởng, kỷ luật', prompt: 'Soạn quyết định với các thông tin sau:' },
-            { id: 4, icon: '📄', title: 'Công văn', description: 'Mẫu công văn hành chính', prompt: 'Soạn công văn với các thông tin sau:' },
-            { id: 5, icon: '📖', title: 'Nội quy công ty', description: 'Nội quy lao động theo luật định', prompt: 'Soạn nội quy công ty với các thông tin sau:' },
-            { id: 6, icon: '✍️', title: 'Biên bản họp', description: 'Biên bản cuộc họp chính thức', prompt: 'Soạn biên bản họp với các thông tin sau:' },
-            { id: 7, icon: '📢', title: 'Thông báo', description: 'Thông báo nội bộ cho nhân viên', prompt: 'Soạn thông báo với các thông tin sau:' },
-            { id: 8, icon: '🏠', title: 'Hợp đồng thuê nhà', description: 'Hợp đồng thuê nhà ở/văn phòng', prompt: 'Soạn hợp đồng thuê nhà với các thông tin sau:' }
+            { id: 1, icon: '📝', title: 'Hợp đồng lao động', description: 'Mẫu hợp đồng lao động theo Bộ luật Lao động 2019', prompt: 'Soạn hợp đồng lao động với các thông tin sau:\n- Tên công ty:\n- Tên nhân viên:\n- Vị trí:\n- Mức lương:\n- Thời hạn hợp đồng:' },
+            { id: 2, icon: '🤝', title: 'Hợp đồng dịch vụ', description: 'Hợp đồng cung cấp dịch vụ chuyên nghiệp', prompt: 'Soạn hợp đồng dịch vụ với các thông tin sau:\n- Bên cung cấp:\n- Bên sử dụng:\n- Loại dịch vụ:\n- Giá trị hợp đồng:' },
+            { id: 3, icon: '📋', title: 'Quyết định', description: 'Quyết định bổ nhiệm, khen thưởng, kỷ luật', prompt: 'Soạn quyết định với các thông tin sau:\n- Loại quyết định:\n- Đối tượng:\n- Lý do:' },
+            { id: 4, icon: '📄', title: 'Công văn', description: 'Mẫu công văn hành chính', prompt: 'Soạn công văn với các thông tin sau:\n- Người gửi:\n- Người nhận:\n- Nội dung:' },
+            { id: 5, icon: '📖', title: 'Nội quy công ty', description: 'Nội quy lao động theo luật định', prompt: 'Soạn nội quy công ty với các thông tin sau:\n- Tên công ty:\n- Ngành nghề:\n- Quy mô:' },
+            { id: 6, icon: '✍️', title: 'Biên bản họp', description: 'Biên bản cuộc họp chính thức', prompt: 'Soạn biên bản họp với các thông tin sau:\n- Chủ đề cuộc họp:\n- Người chủ trì:\n- Thành phần tham gia:' },
+            { id: 7, icon: '📢', title: 'Thông báo', description: 'Thông báo nội bộ cho nhân viên', prompt: 'Soạn thông báo với các thông tin sau:\n- Nội dung thông báo:\n- Đối tượng nhận:' },
+            { id: 8, icon: '🏠', title: 'Hợp đồng thuê nhà', description: 'Hợp đồng thuê nhà ở/văn phòng', prompt: 'Soạn hợp đồng thuê nhà với các thông tin sau:\n- Bên cho thuê:\n- Bên thuê:\n- Địa chỉ nhà:\n- Giá thuê:\n- Thời hạn:' }
         ];
 
         // ===== SAMPLE DATA =====
@@ -1639,6 +1854,7 @@ console.log(data);</code></pre>
                     currentUser = await response.json();
                     showDashboard();
                     updateUserUI();
+                    loadChatHistory();
                 } else {
                     localStorage.removeItem('token');
                     showLogin();
@@ -1667,6 +1883,7 @@ console.log(data);</code></pre>
                     currentUser = data.user;
                     showDashboard();
                     updateUserUI();
+                    loadChatHistory();
                 } else {
                     alert('Email hoặc mật khẩu không đúng');
                 }
@@ -1696,6 +1913,7 @@ console.log(data);</code></pre>
                     currentUser = data.user;
                     showDashboard();
                     updateUserUI();
+                    loadChatHistory();
                 } else {
                     alert('Email đã được sử dụng hoặc thông tin không hợp lệ');
                 }
@@ -1740,7 +1958,181 @@ console.log(data);</code></pre>
             if (confirm('Bạn có chắc muốn đăng xuất?')) {
                 localStorage.removeItem('token');
                 currentUser = null;
+                currentSessionId = null;
+                chatSessions = [];
                 showLogin();
+            }
+        }
+
+        // ===== CHAT HISTORY =====
+        async function loadChatHistory() {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('/v1/chats', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    chatSessions = await response.json();
+                    renderChatHistory();
+                }
+            } catch (error) {
+                console.error('Load chat history error:', error);
+            }
+        }
+
+        function renderChatHistory() {
+            const container = document.getElementById('chatHistoryContainer');
+            
+            if (!chatSessions || chatSessions.length === 0) {
+                container.innerHTML = '<div style="padding: 1rem; color: var(--text-muted); font-size: 0.875rem; text-align: center;">Chưa có lịch sử</div>';
+                return;
+            }
+
+            // Group by date
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            const sevenDaysAgo = new Date(today);
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+            const groups = {
+                today: [],
+                yesterday: [],
+                week: [],
+                older: []
+            };
+
+            chatSessions.forEach(session => {
+                const sessionDate = new Date(session.created_at);
+                const sessionDay = new Date(sessionDate.getFullYear(), sessionDate.getMonth(), sessionDate.getDate());
+                
+                if (sessionDay.getTime() === today.getTime()) {
+                    groups.today.push(session);
+                } else if (sessionDay.getTime() === yesterday.getTime()) {
+                    groups.yesterday.push(session);
+                } else if (sessionDate >= sevenDaysAgo) {
+                    groups.week.push(session);
+                } else {
+                    groups.older.push(session);
+                }
+            });
+
+            let html = '';
+
+            if (groups.today.length > 0) {
+                html += '<div class="chat-history-group"><div class="chat-history-group-label">Hôm nay</div>';
+                groups.today.forEach(s => html += renderChatHistoryItem(s));
+                html += '</div>';
+            }
+
+            if (groups.yesterday.length > 0) {
+                html += '<div class="chat-history-group"><div class="chat-history-group-label">Hôm qua</div>';
+                groups.yesterday.forEach(s => html += renderChatHistoryItem(s));
+                html += '</div>';
+            }
+
+            if (groups.week.length > 0) {
+                html += '<div class="chat-history-group"><div class="chat-history-group-label">7 ngày trước</div>';
+                groups.week.forEach(s => html += renderChatHistoryItem(s));
+                html += '</div>';
+            }
+
+            if (groups.older.length > 0) {
+                html += '<div class="chat-history-group"><div class="chat-history-group-label">Cũ hơn</div>';
+                groups.older.forEach(s => html += renderChatHistoryItem(s));
+                html += '</div>';
+            }
+
+            container.innerHTML = html;
+        }
+
+        function renderChatHistoryItem(session) {
+            const active = session.id === currentSessionId ? 'active' : '';
+            const title = session.title || 'Cuộc hội thoại mới';
+            const msgCount = session.message_count || 0;
+            
+            return `
+                <div class="chat-history-item ${active}" onclick="loadChatSession('${session.id}')">
+                    <div class="chat-history-title">${escapeHtml(title)}</div>
+                    <div class="chat-history-meta">${msgCount} tin nhắn</div>
+                </div>
+            `;
+        }
+
+        async function loadChatSession(sessionId) {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`/v1/chats/${sessionId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    currentSessionId = sessionId;
+                    
+                    // Clear chat
+                    const chatMessages = document.getElementById('chatMessages');
+                    chatMessages.innerHTML = '';
+                    
+                    // Render messages
+                    if (data.messages && data.messages.length > 0) {
+                        data.messages.forEach(msg => {
+                            if (msg.role === 'user') {
+                                addMessage('user', msg.content);
+                            } else {
+                                addMessage('ai', msg.content, msg.citations);
+                            }
+                        });
+                    }
+
+                    // Update header
+                    document.getElementById('chatHeaderTitle').textContent = data.session?.title || 'Cuộc hội thoại';
+                    
+                    // Update sidebar
+                    renderChatHistory();
+                    
+                    // Show chat page
+                    showPage('chat');
+                    
+                    // Close mobile sidebar
+                    if (window.innerWidth <= 768) {
+                        toggleSidebar();
+                    }
+                }
+            } catch (error) {
+                console.error('Load chat session error:', error);
+            }
+        }
+
+        function startNewChat() {
+            currentSessionId = null;
+            const chatMessages = document.getElementById('chatMessages');
+            chatMessages.innerHTML = `
+                <div class="chat-welcome" id="chatWelcome">
+                    <div class="welcome-card">
+                        <div class="welcome-icon">⚖️</div>
+                        <div class="welcome-title">Xin chào! Tôi là trợ lý pháp lý AI.</div>
+                        <div class="welcome-text">Hỏi tôi bất kỳ câu hỏi nào về luật pháp Việt Nam, soạn thảo văn bản, hoặc rà soát hợp đồng.</div>
+                    </div>
+                    <div class="suggestion-chips">
+                        <div class="suggestion-chip" onclick="useSuggestion('Soạn hợp đồng lao động')">📄 Soạn HĐLĐ</div>
+                        <div class="suggestion-chip" onclick="useSuggestion('Rà soát hợp đồng')">🔍 Rà soát hợp đồng</div>
+                        <div class="suggestion-chip" onclick="useSuggestion('Tra cứu luật lao động')">📋 Tra cứu luật</div>
+                        <div class="suggestion-chip" onclick="useSuggestion('Thời gian thử việc là bao lâu?')">❓ Thử việc</div>
+                        <div class="suggestion-chip" onclick="useSuggestion('Thuế TNDN là gì?')">💰 Thuế TNDN</div>
+                        <div class="suggestion-chip" onclick="useSuggestion('Thành lập công ty cần gì?')">🏢 Thành lập công ty</div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('chatHeaderTitle').textContent = 'Cuộc hội thoại mới';
+            renderChatHistory();
+            showPage('chat');
+            
+            // Close mobile sidebar
+            if (window.innerWidth <= 768) {
+                toggleSidebar();
             }
         }
 
@@ -1750,7 +2142,22 @@ console.log(data);</code></pre>
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             
             document.getElementById(pageName + 'Page').classList.add('active');
-            event.target.closest('.nav-item').classList.add('active');
+            
+            // Find and activate nav item
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => {
+                if (item.getAttribute('onclick') && item.getAttribute('onclick').includes(pageName)) {
+                    item.classList.add('active');
+                }
+            });
+            
+            // Close mobile sidebar
+            if (window.innerWidth <= 768) {
+                const sidebar = document.getElementById('sidebar');
+                if (sidebar.classList.contains('open')) {
+                    sidebar.classList.remove('open');
+                }
+            }
         }
 
         function toggleSidebar() {
@@ -1793,25 +2200,35 @@ console.log(data);</code></pre>
             input.value = '';
             autoResize(input);
 
-            // Show typing
-            showTyping();
+            // Show typing with status text
+            showTyping('Đang tìm kiếm...');
 
             // Send to API
             try {
                 const token = localStorage.getItem('token');
+                const body = currentSessionId 
+                    ? { question: message, session_id: currentSessionId }
+                    : { question: message };
+                
                 const response = await fetch('/v1/legal/ask', {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ question: message })
+                    body: JSON.stringify(body)
                 });
 
                 if (response.ok) {
                     const data = await response.json();
                     removeTyping();
                     addMessage('ai', data.answer, data.citations);
+                    
+                    // Update session ID if new
+                    if (!currentSessionId && data.session_id) {
+                        currentSessionId = data.session_id;
+                        loadChatHistory();
+                    }
                 } else {
                     removeTyping();
                     addMessage('ai', 'Xin lỗi, có lỗi xảy ra. Vui lòng thử lại.');
@@ -1836,39 +2253,106 @@ console.log(data);</code></pre>
             if (citations && citations.length > 0) {
                 citationsHtml = `
                     <div class="citations">
-                        <div class="citations-header" onclick="this.nextElementSibling.classList.toggle('hidden')">
-                            📚 ${citations.length} nguồn tham khảo <span style="float:right">▼</span>
+                        <div class="citations-header" onclick="toggleCitations(this)">
+                            <span>📚 ${citations.length} nguồn tham khảo</span>
+                            <span class="citations-toggle">▼</span>
                         </div>
                         <div class="citations-list hidden">
-                            ${citations.map(c => `<div class="citation-item">${c}</div>`).join('')}
+                            ${citations.map(c => renderCitation(c)).join('')}
                         </div>
                     </div>
                 `;
             }
 
+            const renderedText = type === 'ai' ? renderMarkdown(text) : escapeHtml(text);
+
             msg.innerHTML = `
                 <div class="message-avatar">${avatar}</div>
                 <div class="message-content">
-                    <div class="message-text">${type === 'ai' ? marked.parse(text) : text}</div>
+                    <div class="message-text">${renderedText}</div>
                     ${citationsHtml}
                 </div>
             `;
 
             container.appendChild(msg);
             container.scrollTop = container.scrollHeight;
+
+            // Add copy buttons to code blocks
+            if (type === 'ai') {
+                msg.querySelectorAll('pre code').forEach((block, index) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'code-copy-btn';
+                    btn.textContent = '📋 Copy';
+                    btn.onclick = () => copyCodeBlock(block, btn);
+                    block.parentElement.style.position = 'relative';
+                    block.parentElement.appendChild(btn);
+                });
+            }
         }
 
-        function showTyping() {
+        function renderMarkdown(text) {
+            // Configure marked for better rendering
+            marked.setOptions({
+                breaks: true,
+                gfm: true
+            });
+            return marked.parse(text);
+        }
+
+        function renderCitation(citation) {
+            if (typeof citation === 'string') {
+                return `<div class="citation-card"><div class="citation-content">${escapeHtml(citation)}</div></div>`;
+            }
+            
+            const lawTitle = citation.law_title || citation.title || 'Văn bản pháp luật';
+            const article = citation.article || '';
+            const content = citation.content || citation.excerpt || '';
+            const lawNumber = citation.law_number || '';
+
+            return `
+                <div class="citation-card">
+                    <div class="citation-header">
+                        <div class="citation-law-title">${escapeHtml(lawTitle)}</div>
+                        ${article ? `<div class="citation-article">${escapeHtml(article)}</div>` : ''}
+                    </div>
+                    ${content ? `<div class="citation-content">${escapeHtml(content.substring(0, 200))}${content.length > 200 ? '...' : ''}</div>` : ''}
+                    ${lawNumber ? `<div class="citation-law-number">${escapeHtml(lawNumber)}</div>` : ''}
+                </div>
+            `;
+        }
+
+        function toggleCitations(header) {
+            const citations = header.parentElement;
+            const list = citations.querySelector('.citations-list');
+            list.classList.toggle('hidden');
+            citations.classList.toggle('expanded');
+        }
+
+        function copyCodeBlock(codeBlock, btn) {
+            const code = codeBlock.textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                const originalText = btn.textContent;
+                btn.textContent = '✓ Copied!';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                }, 2000);
+            });
+        }
+
+        function showTyping(statusText = null) {
             const container = document.getElementById('chatMessages');
             const typing = document.createElement('div');
             typing.className = 'typing-indicator';
             typing.id = 'typingIndicator';
             typing.innerHTML = `
                 <div class="message-avatar">⚖️</div>
-                <div class="typing-dots">
-                    <div class="typing-dot"></div>
-                    <div class="typing-dot"></div>
-                    <div class="typing-dot"></div>
+                <div>
+                    <div class="typing-dots">
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                    </div>
+                    ${statusText ? `<div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem;">${statusText}</div>` : ''}
                 </div>
             `;
             container.appendChild(typing);
@@ -1887,6 +2371,12 @@ console.log(data);</code></pre>
             }
         }
 
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
         // ===== TEMPLATES =====
         function renderTemplates() {
             const grid = document.getElementById('templatesGrid');
@@ -1902,8 +2392,11 @@ console.log(data);</code></pre>
         function useTemplate(id) {
             const template = templates.find(t => t.id === id);
             if (template) {
-                showPage('chat');
-                setTimeout(() => useSuggestion(template.prompt), 100);
+                // Start new chat with template
+                startNewChat();
+                setTimeout(() => {
+                    useSuggestion(template.prompt);
+                }, 100);
             }
         }
 
@@ -1957,7 +2450,7 @@ console.log(data);</code></pre>
         function reviewContract(id) {
             const contract = sampleContracts.find(c => c.id === id);
             if (contract) {
-                showPage('chat');
+                startNewChat();
                 setTimeout(() => useSuggestion(`Rà soát hợp đồng: ${contract.name}`), 100);
             }
         }
@@ -2010,19 +2503,19 @@ console.log(data);</code></pre>
             container.innerHTML = results.map((r, i) => `
                 <div class="result-card">
                     <div class="result-header">
-                        <div class="result-title">${r.title || 'Văn bản pháp luật'}</div>
-                        <div class="result-badge">${r.article || 'Điều ' + (i + 1)}</div>
+                        <div class="result-title">${escapeHtml(r.title || 'Văn bản pháp luật')}</div>
+                        <div class="result-badge">${escapeHtml(r.article || 'Điều ' + (i + 1))}</div>
                     </div>
-                    <div class="result-excerpt">${r.excerpt || r.content?.substring(0, 200) + '...' || ''}</div>
+                    <div class="result-excerpt">${escapeHtml(r.excerpt || r.content?.substring(0, 200) + '...' || '')}</div>
                     <div class="result-actions">
-                        <button class="btn btn-secondary btn-small" onclick="askAboutResult('${r.title}')">💬 Hỏi AI</button>
+                        <button class="btn btn-secondary btn-small" onclick="askAboutResult(\`${escapeHtml(r.title || 'văn bản này')}\`)">💬 Hỏi AI</button>
                     </div>
                 </div>
             `).join('');
         }
 
         function askAboutResult(title) {
-            showPage('chat');
+            startNewChat();
             setTimeout(() => useSuggestion(`Giải thích về: ${title}`), 100);
         }
 
@@ -2078,8 +2571,8 @@ console.log(data);</code></pre>
             container.innerHTML = keys.map(k => `
                 <div class="api-key-item">
                     <div>
-                        <div class="api-key-name">${k.name}</div>
-                        <div class="api-key-value">${k.key}</div>
+                        <div class="api-key-name">${escapeHtml(k.name)}</div>
+                        <div class="api-key-value">${escapeHtml(k.key)}</div>
                     </div>
                     <button class="icon-btn" onclick="deleteApiKey('${k.id}')">🗑️</button>
                 </div>

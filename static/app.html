@@ -2339,7 +2339,7 @@ console.log(await resp.json());</code></pre>
                     const responseTime = ((Date.now() - startTime) / 1000).toFixed(1);
                     addMessageWithStreaming('ai', data.answer, data.citations, responseTime);
                     if (!currentSessionId && data.session_id) { currentSessionId = data.session_id; loadChatHistory(); }
-                } else { removeTyping(); const err = await response.json().catch(() => ({})); showToast(`Lỗi: ${err.detail || response.status}`, 'error'); addMessage('ai', `⚠️ ${err.detail || 'Lỗi'}. Thử lại.`); }
+                } else { removeTyping(); const err = await response.json().catch(() => ({})); const errMsg = typeof err.detail === 'string' ? err.detail : Array.isArray(err.detail) ? err.detail.map(e => e.msg || e).join(', ') : `Lỗi ${response.status}`; showToast(errMsg, 'error'); addMessage('ai', `⚠️ ${errMsg}. Thử lại.`); }
             } catch (e) { removeTyping(); showToast('Không thể kết nối', 'error'); addMessage('ai', 'Không thể kết nối. Thử lại.'); }
         }
 

@@ -208,7 +208,7 @@ class FileContext(BaseModel):
     file_type: str
 
 class LegalQuery(BaseModel):
-    question: str = Field(..., min_length=5, max_length=2000, description="Câu hỏi pháp luật")
+    question: str = Field(..., min_length=1, max_length=5000, description="Câu hỏi pháp luật")
     domains: Optional[List[str]] = Field(None, description="Lĩnh vực: lao_dong, doanh_nghiep, dan_su, thue, dat_dai...")
     max_sources: int = Field(10, ge=1, le=30, description="Số nguồn tham chiếu tối đa")
     stream: bool = Field(False, description="Stream response")

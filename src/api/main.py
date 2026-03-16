@@ -242,6 +242,93 @@ async def call_claude(system_prompt: str, user_message: str, max_tokens: int = 4
 # Law Search
 # ============================================
 
+# ============================================
+# Vietnamese Diacritics Restoration
+# ============================================
+
+NO_ACCENT_MAP = {
+    # Common legal phrases
+    "thu viec": "thử việc",
+    "nghi phep": "nghỉ phép",
+    "hop dong lao dong": "hợp đồng lao động",
+    "thue tndn": "thuế TNDN",
+    "thue thu nhap": "thuế thu nhập",
+    "sa thai": "sa thải",
+    "luong": "lương",
+    "bao hiem": "bảo hiểm",
+    "nghi viec": "nghỉ việc",
+    "ky luat": "kỷ luật",
+    "thai san": "thai sản",
+    "tang ca": "tăng ca",
+    "lam them gio": "làm thêm giờ",
+    "nghi le": "nghỉ lễ",
+    "cham dut hop dong": "chấm dứt hợp đồng",
+    "boi thuong": "bồi thường",
+    "tranh chap": "tranh chấp",
+    "thanh lap cong ty": "thành lập công ty",
+    "doanh nghiep": "doanh nghiệp",
+    "co phan": "cổ phần",
+    "thue gia tri gia tang": "thuế giá trị gia tăng",
+    "dat dai": "đất đai",
+    "quyen su dung dat": "quyền sử dụng đất",
+    # Common single words
+    "thoi gian": "thời gian",
+    "toi da": "tối đa",
+    "toi thieu": "tối thiểu",
+    "quy dinh": "quy định",
+    "noi dung": "nội dung",
+    "hinh thuc": "hình thức",
+    "hop dong": "hợp đồng",
+    "cong ty": "công ty",
+    "dieu": "điều",
+    "khoan": "khoản",
+    "luat": "luật",
+    "bo luat": "bộ luật",
+    "nghi dinh": "nghị định",
+    "thong tu": "thông tư",
+    "quyet dinh": "quyết định",
+    "muc": "mức",
+    "so": "số",
+    "nam": "năm",
+    "thang": "tháng",
+    "ngay": "ngày",
+    "gio": "giờ",
+    "viec": "việc",
+    "nguoi": "người",
+    "phep": "phép",
+    "thue": "thuế",
+    "suat": "suất",
+    "tien": "tiền",
+}
+
+def has_vietnamese_diacritics(text: str) -> bool:
+    """Check if text contains Vietnamese diacritics"""
+    import re
+    # Vietnamese diacritics pattern
+    vietnamese_chars = r'[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]'
+    return bool(re.search(vietnamese_chars, text.lower()))
+
+def restore_diacritics(query: str) -> str:
+    """Restore Vietnamese diacritics from common non-diacritics legal terms"""
+    import re
+    
+    # If query already has diacritics, return as-is
+    if has_vietnamese_diacritics(query):
+        return query
+    
+    # Try to match and replace phrases from NO_ACCENT_MAP
+    restored = query.lower()
+    
+    # Sort by length (longest first) to match longer phrases first
+    sorted_mappings = sorted(NO_ACCENT_MAP.items(), key=lambda x: len(x[0]), reverse=True)
+    
+    for no_accent, with_accent in sorted_mappings:
+        # Use word boundaries to avoid partial matches
+        pattern = r'\b' + re.escape(no_accent) + r'\b'
+        restored = re.sub(pattern, with_accent, restored, flags=re.IGNORECASE)
+    
+    return restored
+
 def extract_search_query(question: str) -> str:
     """Extract key legal terms from Vietnamese question"""
     import re
@@ -332,14 +419,23 @@ def search_laws(query: str, domains: Optional[List[str]] = None, limit: int = 10
         return [dict(r) for r in cur.fetchall()]
 
 def multi_query_search(question: str, domains: Optional[List[str]] = None, limit: int = 15) -> List[dict]:
-    """Smart multi-query search: domain detection + ILIKE phrase + tsvector"""
+    """Smart multi-query search: domain detection + ILIKE phrase + tsvector + diacritics fallback"""
     
     # Auto-detect domain
     if not domains:
         domains = detect_domain(question)
     
-    # Extract clean keywords
-    keywords = extract_search_query(question)
+    # Check if query needs diacritics restoration
+    original_query = question
+    restored_query = restore_diacritics(question)
+    queries_to_search = [original_query]
+    
+    # If restoration produced a different query, search with both
+    if restored_query.lower() != original_query.lower():
+        queries_to_search.append(restored_query)
+    
+    # Extract clean keywords from the best available query
+    keywords = extract_search_query(restored_query if restored_query != original_query else question)
     words = [w for w in keywords.split() if len(w) > 1]
     
     # Build meaningful phrases (skip common words like thời gian, quy định)
@@ -364,6 +460,8 @@ def multi_query_search(question: str, domains: Optional[List[str]] = None, limit
     phrase_results = []
     with get_db() as conn:
         cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        # Search with original phrases
         for phrase in phrases[:3]:
             domain_filter = ""
             params = [f"%{phrase}%"]
@@ -387,6 +485,46 @@ def multi_query_search(question: str, domains: Optional[List[str]] = None, limit
                 LIMIT {limit}
             """, params)
             phrase_results.extend([dict(r) for r in cur.fetchall()])
+        
+        # If we have a restored query that's different, search with restored phrases too
+        if restored_query.lower() != original_query.lower():
+            restored_keywords = extract_search_query(restored_query)
+            restored_words = [w for w in restored_keywords.split() if len(w) > 1]
+            common_prefixes = {"thời", "gian", "quy", "định", "mức", "tối", "đa", "số", "ngày"}
+            restored_key_words = [w for w in restored_words if w not in common_prefixes]
+            if not restored_key_words:
+                restored_key_words = restored_words
+            
+            restored_phrases = []
+            if len(restored_key_words) >= 2:
+                restored_phrases.append(" ".join(restored_key_words[:3]))
+                restored_phrases.append(" ".join(restored_key_words[:2]))
+            elif restored_key_words:
+                restored_phrases.append(restored_key_words[0])
+            
+            for phrase in restored_phrases[:2]:
+                domain_filter = ""
+                params = [f"%{phrase}%"]
+                if domains:
+                    domain_filter = "AND lc.domains && %s::legal_domain[]"
+                    params.append("{" + ",".join(domains) + "}")
+                
+                cur.execute(f"""
+                    SELECT lc.id as chunk_id, lc.law_id, ld.title as law_title, 
+                           ld.law_number, lc.article, lc.title as chunk_title,
+                           lc.content, lc.domains, 1.2::float as rank
+                    FROM law_chunks lc
+                    JOIN law_documents ld ON ld.id = lc.law_id
+                    WHERE lc.content ILIKE %s {domain_filter}
+                    ORDER BY 
+                        CASE WHEN ld.title LIKE 'Bo Luat%%' OR ld.title LIKE 'Bộ luật%%' THEN 0
+                             WHEN ld.title LIKE 'Luat %%' OR ld.title LIKE 'Luật %%' THEN 1
+                             WHEN ld.title LIKE 'Nghi dinh%%' OR ld.title LIKE 'Nghị định%%' THEN 2
+                             ELSE 3 END,
+                        length(lc.content) DESC
+                    LIMIT {limit}
+                """, params)
+                phrase_results.extend([dict(r) for r in cur.fetchall()])
     
     # Phase 1.5: Synonym expansion search (e.g., "tndn" → "thu nhập doanh nghiệp")
     synonyms = expand_synonyms(keywords)

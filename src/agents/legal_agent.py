@@ -125,6 +125,21 @@ TOOLS = [
             "type": "object",
             "properties": {}
         }
+    },
+    {
+        "name": "compare_contracts",
+        "description": "So sánh 2 hoặc nhiều hợp đồng. Tìm điểm khác biệt, không nhất quán, và đánh giá hợp đồng nào có lợi hơn.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "contract_ids": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Danh sách ID hợp đồng cần so sánh (tối thiểu 2)"
+                }
+            },
+            "required": ["contract_ids"]
+        }
     }
 ]
 
@@ -197,12 +212,12 @@ def _get_claude_headers():
     return headers
 
 
-async def _call_claude_with_tools(messages: list, tools: list, system: str = AGENT_SYSTEM_PROMPT, max_tokens: int = 8192) -> dict:
+async def _call_claude_with_tools(messages: list, tools: list, system: str = AGENT_SYSTEM_PROMPT, max_tokens: int = 8192, model: str = "claude-sonnet-4-20250514") -> dict:
     """Call Claude API with tool definitions, return raw response dict"""
     headers = _get_claude_headers()
 
     payload = {
-        "model": "claude-sonnet-4-20250514",
+        "model": model,
         "max_tokens": max_tokens,
         "system": system,
         "messages": messages,
@@ -213,6 +228,56 @@ async def _call_claude_with_tools(messages: list, tools: list, system: str = AGE
         response = await client.post(CLAUDE_API_URL, headers=headers, json=payload)
         response.raise_for_status()
         return response.json()
+
+
+# Fast path detection — skip agent loop for simple questions
+SIMPLE_PATTERNS = [
+    "xin chào", "hello", "hi", "chào", "cảm ơn", "thank", 
+    "bạn là ai", "giới thiệu", "bạn có thể làm gì",
+    "ok", "được", "tốt", "vâng", "ừ"
+]
+
+def is_simple_question(question: str) -> bool:
+    """Check if question is simple enough to skip agent loop"""
+    q = question.strip().lower()
+    if len(q) < 30:
+        for p in SIMPLE_PATTERNS:
+            if p in q:
+                return True
+    return False
+
+
+async def quick_answer(question: str, chat_history: list = None) -> dict:
+    """Direct Claude call without tools — for simple questions"""
+    headers = _get_claude_headers()
+    messages = []
+    if chat_history:
+        for msg in chat_history:
+            messages.append({"role": msg["role"], "content": msg["content"]})
+    messages.append({"role": "user", "content": question})
+    
+    payload = {
+        "model": "claude-sonnet-4-20250514",
+        "max_tokens": 2048,
+        "system": AGENT_SYSTEM_PROMPT,
+        "messages": messages
+    }
+    
+    async with httpx.AsyncClient(timeout=60) as client:
+        response = await client.post(CLAUDE_API_URL, headers=headers, json=payload)
+        response.raise_for_status()
+        data = response.json()
+    
+    text = "".join(b.get("text", "") for b in data.get("content", []) if b.get("type") == "text")
+    usage = data.get("usage", {})
+    return {
+        "answer": text,
+        "citations": [],
+        "input_tokens": usage.get("input_tokens", 0),
+        "output_tokens": usage.get("output_tokens", 0),
+        "model": data.get("model", ""),
+        "tool_calls_made": 0
+    }
 
 
 async def _call_claude_with_tools_stream(messages: list, tools: list, system: str = AGENT_SYSTEM_PROMPT, max_tokens: int = 8192):
@@ -242,6 +307,36 @@ async def _call_claude_with_tools_stream(messages: list, tools: list, system: st
                         continue
 
 
+async def _stream_final_text(messages: list, system: str = AGENT_SYSTEM_PROMPT) -> AsyncGenerator[str, None]:
+    """Stream Claude response without tools — for fast path"""
+    headers = _get_claude_headers()
+    payload = {
+        "model": "claude-sonnet-4-20250514",
+        "max_tokens": 4096,
+        "system": system,
+        "messages": messages,
+        "stream": True
+    }
+    async with httpx.AsyncClient(timeout=120) as client:
+        async with client.stream("POST", CLAUDE_API_URL, headers=headers, json=payload) as response:
+            response.raise_for_status()
+            async for line in response.aiter_lines():
+                if line.startswith("data: "):
+                    data_str = line[6:]
+                    if data_str.strip() == "[DONE]":
+                        break
+                    try:
+                        event = json.loads(data_str)
+                        if event.get("type") == "content_block_delta":
+                            delta = event.get("delta", {})
+                            if delta.get("type") == "text_delta":
+                                text = delta.get("text", "")
+                                if text:
+                                    yield f"data: {json.dumps({'type': 'delta', 'text': text}, ensure_ascii=False)}\n\n"
+                    except json.JSONDecodeError:
+                        continue
+
+
 # ============================================
 # Tool Execution
 # ============================================
@@ -263,6 +358,8 @@ async def execute_tool(tool_name: str, tool_input: dict, company_id: str) -> dic
         return await _tool_draft_document(tool_input, company_id)
     elif tool_name == "get_company_profile":
         return await _tool_get_company_profile(company_id)
+    elif tool_name == "compare_contracts":
+        return await _tool_compare_contracts(tool_input, company_id)
     else:
         return {"error": f"Unknown tool: {tool_name}"}
 
@@ -276,7 +373,7 @@ async def _tool_search_law(tool_input: dict, company_id: str) -> dict:
     if not domains:
         domains = _detect_domain(query)
 
-    results = _multi_query_search(query, domains, min(limit, 20))
+    results = _multi_query_search(query, domains, min(limit, 8))
 
     citations = []
     formatted_results = []
@@ -284,7 +381,7 @@ async def _tool_search_law(tool_input: dict, company_id: str) -> dict:
         law_title = src.get("law_title", "")
         law_number = src.get("law_number", "N/A")
         article = src.get("article", "N/A")
-        content = src.get("content", "")[:2000]
+        content = src.get("content", "")[:1500]
 
         formatted_results.append({
             "index": i,
@@ -544,6 +641,39 @@ async def _tool_get_company_profile(company_id: str) -> dict:
     return result
 
 
+async def _tool_compare_contracts(tool_input: dict, company_id: str) -> dict:
+    """Compare multiple contracts side-by-side"""
+    contract_ids = tool_input.get("contract_ids", [])
+    if len(contract_ids) < 2:
+        return {"error": "Cần ít nhất 2 hợp đồng để so sánh"}
+
+    contracts_data = []
+    for cid in contract_ids[:5]:
+        contract_data = await _tool_read_contract({"contract_id": cid}, company_id)
+        if "error" in contract_data:
+            return {"error": f"Không thể đọc hợp đồng {cid}: {contract_data['error']}"}
+        contracts_data.append(contract_data["contract"])
+
+    comparison = []
+    for c in contracts_data:
+        comparison.append({
+            "id": str(c.get("id", "")),
+            "name": c.get("name", ""),
+            "contract_type": c.get("contract_type", ""),
+            "parties": c.get("parties"),
+            "start_date": c.get("start_date"),
+            "end_date": c.get("end_date"),
+            "value": c.get("value"),
+            "text_excerpt": (c.get("extracted_text") or "")[:5000]
+        })
+
+    return {
+        "contracts": comparison,
+        "count": len(comparison),
+        "instruction": "Hãy so sánh chi tiết các hợp đồng này. Tìm điểm khác biệt, điểm không nhất quán, và đánh giá hợp đồng nào có lợi hơn cho công ty."
+    }
+
+
 # ============================================
 # Agent Loop (non-streaming)
 # ============================================
@@ -556,12 +686,12 @@ async def run_agent(
     chat_history: Optional[list] = None
 ) -> dict:
     """
-    Agent loop:
-    1. Send user question + tools to Claude
-    2. If Claude returns tool_use → execute tool → feed result back
-    3. Repeat until Claude returns text response (no more tool calls)
-    4. Return final text + all citations collected from tool calls
+    Agent loop with fast path for simple questions.
     """
+    # Fast path — skip tool loop for simple greetings/acknowledgments
+    if is_simple_question(question):
+        return await quick_answer(question, chat_history)
+    
     messages = []
     if chat_history:
         for msg in chat_history:
@@ -648,7 +778,8 @@ TOOL_STATUS_LABELS = {
     "search_company_docs": "📄 Đang tìm kiếm tài liệu nội bộ...",
     "analyze_contract_risk": "⚖️ Đang phân tích rủi ro hợp đồng...",
     "draft_document": "✍️ Đang chuẩn bị soạn thảo văn bản...",
-    "get_company_profile": "🏢 Đang lấy thông tin công ty..."
+    "get_company_profile": "🏢 Đang lấy thông tin công ty...",
+    "compare_contracts": "⚖️ Đang so sánh hợp đồng..."
 }
 
 
@@ -752,8 +883,21 @@ async def run_agent_stream_final_text(
 ) -> AsyncGenerator[str, None]:
     """
     Enhanced streaming: tool calls use non-streaming, final text uses true streaming.
-    Yields same SSE events as run_agent_stream.
+    Fast path for simple questions.
     """
+    # Fast path — simple questions skip tools entirely
+    if is_simple_question(question):
+        messages = []
+        if chat_history:
+            for msg in chat_history:
+                messages.append({"role": msg["role"], "content": msg["content"]})
+        messages.append({"role": "user", "content": question})
+        
+        async for event in _stream_final_text(messages):
+            yield event
+        yield f"data: {json.dumps({'type': 'done'})}\n\n"
+        return
+    
     messages = []
     if chat_history:
         for msg in chat_history:

@@ -1605,6 +1605,294 @@ def _add_formatted_text(paragraph, text: str):
                     run.font.size = Pt(13)
 
 
+# ============================================
+# Feature: Smart Contract Comparison
+# ============================================
+
+class ContractCompareRequest(BaseModel):
+    contract_ids: List[str] = Field(..., min_length=2, description="Danh sách ID hợp đồng cần so sánh (tối thiểu 2)")
+
+@app.post("/v1/contracts/compare")
+async def compare_contracts(req: ContractCompareRequest, company: dict = Depends(verify_api_key)):
+    """Compare 2+ contracts side-by-side with AI analysis"""
+    check_rate_limit(str(company["company_id"]))
+
+    if len(req.contract_ids) < 2:
+        raise HTTPException(status_code=400, detail="Cần ít nhất 2 hợp đồng để so sánh")
+    if len(req.contract_ids) > 5:
+        raise HTTPException(status_code=400, detail="Tối đa 5 hợp đồng")
+
+    contracts_data = []
+    with get_db() as conn:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        for cid in req.contract_ids:
+            cur.execute("""
+                SELECT id, name, contract_type, extracted_text, parties,
+                       start_date, end_date, value, status
+                FROM contracts
+                WHERE id::text = %s AND company_id = %s AND status != 'deleted'
+            """, (cid, company["company_id"]))
+            contract = cur.fetchone()
+            if not contract:
+                raise HTTPException(status_code=404, detail=f"Không tìm thấy hợp đồng: {cid}")
+            c = dict(contract)
+            for key in ["start_date", "end_date"]:
+                if c.get(key):
+                    c[key] = str(c[key])
+            contracts_data.append(c)
+
+    # Build comparison prompt
+    contracts_text = ""
+    for i, c in enumerate(contracts_data, 1):
+        text = (c.get("extracted_text") or "")[:8000]
+        contracts_text += f"\n\n--- HỢP ĐỒNG {i}: {c['name']} (Loại: {c.get('contract_type', 'N/A')}) ---\n{text}"
+
+    system_prompt = """Bạn là luật sư chuyên so sánh hợp đồng. Phân tích và so sánh các hợp đồng được cung cấp.
+
+Trả về JSON format:
+{
+    "summary": "Tóm tắt so sánh tổng quan",
+    "contracts": [{"id": "...", "name": "...", "strengths": ["..."], "weaknesses": ["..."]}],
+    "differences": [{"aspect": "Khía cạnh", "details": [{"contract": "Tên HĐ", "content": "Nội dung"}], "recommendation": "Đề xuất"}],
+    "inconsistencies": ["Điểm không nhất quán giữa các hợp đồng"],
+    "best_for_company": {"contract_name": "...", "reason": "Lý do"},
+    "recommendations": ["Đề xuất chung"]
+}"""
+
+    user_message = f"So sánh {len(contracts_data)} hợp đồng sau:{contracts_text}\n\nHãy phân tích chi tiết sự khác biệt, điểm mạnh/yếu của từng hợp đồng, và đề xuất hợp đồng nào có lợi hơn cho công ty."
+
+    result = await call_claude(system_prompt, user_message, max_tokens=8192)
+
+    # Update usage
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("UPDATE companies SET used_quota = used_quota + 1 WHERE id = %s", (company["company_id"],))
+        cur.execute("""
+            INSERT INTO usage_logs (company_id, endpoint, agent_type, input_tokens, output_tokens, status_code)
+            VALUES (%s, '/v1/contracts/compare', 'compare', %s, %s, 200)
+        """, (company["company_id"], result["input_tokens"], result["output_tokens"]))
+        conn.commit()
+
+    try:
+        comparison = json.loads(result["content"])
+    except:
+        comparison = {"raw_analysis": result["content"]}
+
+    return {
+        "comparison": comparison,
+        "contracts": [{
+            "id": str(c["id"]),
+            "name": c["name"],
+            "contract_type": c.get("contract_type"),
+            "start_date": c.get("start_date"),
+            "end_date": c.get("end_date"),
+            "value": c.get("value")
+        } for c in contracts_data],
+        "tokens_used": result["input_tokens"] + result["output_tokens"],
+        "model": result["model"]
+    }
+
+
+# ============================================
+# Feature: Contract Timeline & Deadline Tracking
+# ============================================
+
+@app.get("/v1/contracts/timeline")
+async def contract_timeline(company: dict = Depends(verify_api_key)):
+    """Get all contract deadlines, expiry dates as a timeline"""
+    from datetime import datetime, timedelta
+
+    with get_db() as conn:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            SELECT id, name, contract_type, start_date, end_date, value, status, parties
+            FROM contracts
+            WHERE company_id = %s AND status != 'deleted'
+              AND (start_date IS NOT NULL OR end_date IS NOT NULL)
+            ORDER BY
+                CASE WHEN end_date IS NOT NULL THEN end_date ELSE start_date END ASC
+        """, (company["company_id"],))
+        contracts = cur.fetchall()
+
+    now = datetime.now().date()
+    timeline_items = []
+    overdue_count = 0
+    expiring_30 = 0
+    expiring_60 = 0
+    expiring_90 = 0
+
+    for c in contracts:
+        item = dict(c)
+        for key in ["start_date", "end_date"]:
+            if item.get(key):
+                item[key] = str(item[key])
+        if item.get("parties"):
+            try:
+                if isinstance(item["parties"], str):
+                    item["parties"] = json.loads(item["parties"])
+            except:
+                pass
+
+        end_date = c.get("end_date")
+        if end_date:
+            days_remaining = (end_date - now).days
+            item["days_remaining"] = days_remaining
+            if days_remaining < 0:
+                item["timeline_status"] = "overdue"
+                overdue_count += 1
+            elif days_remaining <= 30:
+                item["timeline_status"] = "expiring_soon"
+                expiring_30 += 1
+            elif days_remaining <= 60:
+                item["timeline_status"] = "expiring_60"
+                expiring_60 += 1
+            elif days_remaining <= 90:
+                item["timeline_status"] = "expiring_90"
+                expiring_90 += 1
+            else:
+                item["timeline_status"] = "active"
+        else:
+            item["days_remaining"] = None
+            item["timeline_status"] = "no_end_date"
+
+        item["id"] = str(item["id"])
+        timeline_items.append(item)
+
+    return {
+        "timeline": timeline_items,
+        "summary": {
+            "total": len(timeline_items),
+            "overdue": overdue_count,
+            "expiring_30_days": expiring_30,
+            "expiring_60_days": expiring_60,
+            "expiring_90_days": expiring_90,
+            "today": str(now)
+        }
+    }
+
+
+# ============================================
+# Feature: Document Annotations
+# ============================================
+
+@app.on_event("startup")
+async def create_annotations_table():
+    """Create annotations table if not exists"""
+    try:
+        with get_db() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS document_annotations (
+                    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+                    document_id UUID NOT NULL,
+                    company_id UUID NOT NULL,
+                    user_id UUID,
+                    text_selection TEXT,
+                    start_offset INTEGER,
+                    end_offset INTEGER,
+                    comment TEXT NOT NULL,
+                    annotation_type VARCHAR(50) DEFAULT 'comment',
+                    is_ai_generated BOOLEAN DEFAULT FALSE,
+                    created_at TIMESTAMPTZ DEFAULT now(),
+                    updated_at TIMESTAMPTZ DEFAULT now()
+                )
+            """)
+            cur.execute("""
+                CREATE INDEX IF NOT EXISTS idx_annotations_document
+                ON document_annotations(document_id, company_id)
+            """)
+            conn.commit()
+    except Exception as e:
+        print(f"Annotations table creation: {e}")
+
+
+class AnnotationCreate(BaseModel):
+    text_selection: Optional[str] = None
+    start_offset: Optional[int] = None
+    end_offset: Optional[int] = None
+    comment: str = Field(..., min_length=1, max_length=5000)
+    annotation_type: str = Field("comment", description="comment, issue, suggestion, highlight")
+
+
+@app.post("/v1/documents/{doc_id}/annotate")
+async def annotate_document(doc_id: str, annotation: AnnotationCreate, company: dict = Depends(verify_api_key)):
+    """Add annotation/comment to a specific part of document"""
+    user_id = company.get("user_id")
+
+    with get_db() as conn:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        # Verify document belongs to company
+        cur.execute("""
+            SELECT id FROM documents WHERE id::text = %s AND company_id = %s
+            UNION ALL
+            SELECT id FROM contracts WHERE id::text = %s AND company_id = %s AND status != 'deleted'
+        """, (doc_id, company["company_id"], doc_id, company["company_id"]))
+        if not cur.fetchone():
+            raise HTTPException(status_code=404, detail="Tài liệu không tồn tại")
+
+        cur.execute("""
+            INSERT INTO document_annotations
+                (document_id, company_id, user_id, text_selection, start_offset, end_offset, comment, annotation_type)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING id, document_id, text_selection, start_offset, end_offset, comment, annotation_type, is_ai_generated, created_at
+        """, (
+            doc_id, company["company_id"], user_id,
+            annotation.text_selection, annotation.start_offset, annotation.end_offset,
+            annotation.comment, annotation.annotation_type
+        ))
+        result = dict(cur.fetchone())
+        conn.commit()
+
+    result["id"] = str(result["id"])
+    result["document_id"] = str(result["document_id"])
+    result["created_at"] = str(result["created_at"])
+    return result
+
+
+@app.get("/v1/documents/{doc_id}/annotations")
+async def get_annotations(doc_id: str, company: dict = Depends(verify_api_key)):
+    """Get all annotations for a document"""
+    with get_db() as conn:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            SELECT a.id, a.document_id, a.user_id, a.text_selection, a.start_offset, a.end_offset,
+                   a.comment, a.annotation_type, a.is_ai_generated, a.created_at,
+                   u.full_name as author_name
+            FROM document_annotations a
+            LEFT JOIN users u ON u.id = a.user_id
+            WHERE a.document_id::text = %s AND a.company_id = %s
+            ORDER BY a.start_offset ASC NULLS LAST, a.created_at ASC
+        """, (doc_id, company["company_id"]))
+        annotations = cur.fetchall()
+
+    result = []
+    for ann in annotations:
+        item = dict(ann)
+        for key in ["id", "document_id", "user_id"]:
+            if item.get(key):
+                item[key] = str(item[key])
+        if item.get("created_at"):
+            item["created_at"] = str(item["created_at"])
+        result.append(item)
+
+    return {"annotations": result, "total": len(result)}
+
+
+@app.delete("/v1/documents/{doc_id}/annotations/{annotation_id}")
+async def delete_annotation(doc_id: str, annotation_id: str, company: dict = Depends(verify_api_key)):
+    """Delete an annotation"""
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            DELETE FROM document_annotations
+            WHERE id::text = %s AND document_id::text = %s AND company_id = %s
+        """, (annotation_id, doc_id, company["company_id"]))
+        if cur.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Annotation không tồn tại")
+        conn.commit()
+    return {"message": "Đã xóa annotation"}
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8080)

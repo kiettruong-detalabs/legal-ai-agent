@@ -195,14 +195,22 @@ CLAUDE_API_URL = "https://api.anthropic.com/v1/messages"
 
 async def call_claude(system_prompt: str, user_message: str, max_tokens: int = 4096) -> dict:
     """Call Claude via OAuth token or API key"""
-    api_key = ANTHROPIC_API_KEY or CLAUDE_OAUTH_TOKEN
+    api_key = ANTHROPIC_API_KEY
+    oauth_token = CLAUDE_OAUTH_TOKEN
     
     headers = {
-        "x-api-key": api_key,
         "anthropic-version": "2023-06-01",
-        "anthropic-beta": "oauth-2025-04-20",
         "content-type": "application/json"
     }
+    
+    if oauth_token:
+        # OAuth token uses Bearer auth
+        headers["Authorization"] = f"Bearer {oauth_token}"
+        headers["anthropic-beta"] = "oauth-2025-04-20"
+    elif api_key:
+        headers["x-api-key"] = api_key
+    else:
+        raise ValueError("No Claude API key or OAuth token configured")
     
     payload = {
         "model": "claude-sonnet-4-20250514",

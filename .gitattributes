@@ -1,0 +1,3 @@
+# Mark generated frontend files so GitHub detects Python as primary language
+static/*.html linguist-generated=true
+static/*.js linguist-generated=true

@@ -26,11 +26,11 @@ services:
       - "${APP_PORT:-8080}:8080"
     environment:
       # Database (internal Docker network)
-      SUPABASE_DB_HOST: db
-      SUPABASE_DB_PORT: 5432
-      SUPABASE_DB_PASSWORD: ${POSTGRES_PASSWORD:-legalai2026}
-      DB_NAME: ${POSTGRES_DB:-legalai}
-      DB_USER: ${POSTGRES_USER:-legalai}
+      POSTGRES_HOST: db
+      POSTGRES_USER: ${POSTGRES_USER:-legalai}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-legalai2026}
+      POSTGRES_DB: ${POSTGRES_DB:-legalai}
+      DB_PORT: 5432
       DB_SSL_MODE: disable
       # Auth
       SECRET_KEY: ${SECRET_KEY:-change-me-to-random-string}

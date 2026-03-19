@@ -21,12 +21,12 @@ REFRESH_TOKEN_EXPIRE_DAYS = 30
 
 # Database config
 DB_CONFIG = {
-    "host": os.getenv("SUPABASE_DB_HOST", "localhost"),
-    "port": int(os.getenv("SUPABASE_DB_PORT", "5432")),
-    "dbname": "postgres",
-    "user": "postgres",
-    "password": os.getenv("SUPABASE_DB_PASSWORD", ""),
-    "sslmode": "require"
+    "host": os.getenv("POSTGRES_HOST", "db"),
+    "port": int(os.getenv("DB_PORT", "5432")),
+    "dbname": os.getenv("POSTGRES_DB", "legalai"),
+    "user": os.getenv("POSTGRES_USER", "legalai"),
+    "password": os.getenv("POSTGRES_PASSWORD", ""),
+    "sslmode": "disable"
 }
 
 @contextmanager

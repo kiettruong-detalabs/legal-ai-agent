@@ -16,7 +16,7 @@ import jwt
 
 # Database config
 DB_CONFIG = {
-    "host": os.getenv("SUPABASE_DB_HOST", "localhost"),
+    "host": os.getenv("POSTGRES_HOST", "db"),
     "port": int(os.getenv("SUPABASE_DB_PORT", "5432")),
     "dbname": "postgres",
     "user": "postgres",

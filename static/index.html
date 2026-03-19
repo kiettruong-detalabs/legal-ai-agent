@@ -11,6 +11,7 @@
     <meta property="og:image" content="/static/og-image.png">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="theme-color" content="#0f0f17">
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -65,10 +66,11 @@
             text-decoration: none; color: var(--text);
         }
         .logo-icon {
-            width: 34px; height: 34px; border-radius: 10px;
-            background: linear-gradient(135deg, var(--accent-dark), var(--accent));
+            height: 34px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 1rem;
+        }
+        .logo-icon img {
+            height: 100%; width: auto;
         }
         .nav-links { display: flex; gap: 2rem; align-items: center; list-style: none; }
         .nav-links a {
@@ -338,8 +340,7 @@
 <nav id="navbar">
     <div class="nav-inner">
         <a href="#" class="logo">
-            <div class="logo-icon">⚖️</div>
-            Legal AI Agent
+            <div class="logo-icon"><img src="/static/logo-fungolaw.svg" alt="FunGoLaw"></div>
         </a>
         <button class="hamburger" id="menuToggle" aria-label="Menu">
             <span></span><span></span><span></span>
@@ -519,8 +520,7 @@
     <div class="container">
         <div class="footer-inner">
             <a href="#" class="logo">
-                <div class="logo-icon">⚖️</div>
-                Legal AI Agent
+                <div class="logo-icon"><img src="/static/logo-fungolaw.svg" alt="FunGoLaw"></div>
             </a>
             <ul class="footer-links">
                 <li><a href="#features">Tính năng</a></li>

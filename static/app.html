@@ -8,6 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="/static/manifest.json">
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png">
     <link rel="apple-touch-icon" href="/static/icon-192.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -168,7 +169,8 @@
         .auth-container::before { content: ''; position: absolute; width: 600px; height: 600px; background: radial-gradient(circle, rgba(99,102,241,0.08) 0%, transparent 70%); border-radius: 50%; top: -300px; right: -300px; animation: float 6s ease-in-out infinite; }
         .auth-box { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 20px; padding: 2.5rem; width: 100%; max-width: 400px; animation: scaleIn 0.4s ease; box-shadow: 0 24px 64px rgba(0,0,0,0.4); position: relative; z-index: 1; }
         .auth-logo { text-align: center; margin-bottom: 2rem; }
-        .auth-logo-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+        .auth-logo-icon { margin-bottom: 0.5rem; }
+        .auth-logo-icon img { height: 40px; width: auto; }
         .auth-logo-text { font-size: 1.5rem; font-weight: 700; background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
         .auth-logo-tagline { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem; }
         .auth-form { display: flex; flex-direction: column; gap: 1rem; }
@@ -1086,7 +1088,8 @@
             padding: 32px; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
         }
         .onboarding-header { text-align: center; margin-bottom: 24px; }
-        .onboarding-logo { font-size: 3rem; margin-bottom: 8px; }
+        .onboarding-logo { margin-bottom: 8px; }
+        .onboarding-logo img { height: 48px; width: auto; }
         .onboarding-header h2 { font-size: 1.2rem; color: var(--text); margin-bottom: 4px; }
         .onboarding-header p { font-size: 0.85rem; color: var(--text-muted); }
         .onboarding-progress {
@@ -1418,8 +1421,7 @@
     <div id="loginPage" class="auth-container">
         <div class="auth-box">
             <div class="auth-logo">
-                <div class="auth-logo-icon">⚖️</div>
-                <div class="auth-logo-text">Legal AI</div>
+                <div class="auth-logo-icon"><img src="/static/logo-fungolaw.svg" alt="FunGoLaw"></div>
                 <div class="auth-logo-tagline">Trợ lý pháp lý AI cho doanh nghiệp Việt Nam</div>
             </div>
             <form class="auth-form" onsubmit="handleLogin(event)">
@@ -1441,8 +1443,7 @@
     <div id="registerPage" class="auth-container hidden">
         <div class="auth-box">
             <div class="auth-logo">
-                <div class="auth-logo-icon">⚖️</div>
-                <div class="auth-logo-text">Legal AI</div>
+                <div class="auth-logo-icon"><img src="/static/logo-fungolaw.svg" alt="FunGoLaw"></div>
                 <div class="auth-logo-tagline">Tạo tài khoản cho doanh nghiệp</div>
             </div>
             <form class="auth-form" onsubmit="handleRegister(event)">
@@ -1727,7 +1728,7 @@
                 <div id="tab-welcome" class="tab-content-pane">
                     <div class="welcome-tab">
                         <div class="welcome-hero">
-                            <div class="welcome-hero-icon">⚖️</div>
+                            <div class="welcome-hero-icon"><img src="/static/logo-fungolaw.svg" alt="FunGoLaw" style="height:48px;width:auto;"></div>
                             <div class="welcome-hero-title">AI Legal Agent <span class="agent-badge"><span class="badge-dot"></span> Agent</span></div>
                             <div class="welcome-hero-text">Trợ lý pháp lý AI cho doanh nghiệp Việt Nam</div>
                         </div>
@@ -1831,7 +1832,7 @@
             <div class="chat-panel-header">
                 <div class="chat-panel-title">
                     <span class="status-dot-indicator" id="connectionDot"></span>
-                    ⚖️ AI Legal Agent
+                    <img src="/static/logo-fungolaw.svg" alt="FunGoLaw" style="height:20px;width:auto;vertical-align:middle;"> AI Legal Agent
                     <span class="chat-panel-status-badge" id="agentStatus">Sẵn sàng</span>
                 </div>
                 <div class="chat-panel-actions" style="position: relative;">
@@ -1845,7 +1846,7 @@
 
             <div class="chat-messages" id="chatMessages" onscroll="handleChatScroll()">
                 <div class="chat-welcome" id="chatWelcome">
-                    <div class="welcome-icon">⚖️</div>
+                    <div class="welcome-icon"><img src="/static/logo-fungolaw.svg" alt="FunGoLaw" style="height:40px;width:auto;"></div>
                     <div class="welcome-greeting">Xin chào! 👋</div>
                     <div class="welcome-text">Tôi có thể giúp bạn tra cứu luật, rà soát hợp đồng, soạn văn bản pháp lý.</div>
                     <div class="suggestion-chips">
@@ -1975,7 +1976,7 @@
         <div class="onboarding-overlay hidden" id="onboardingOverlay">
             <div class="onboarding-wizard">
                 <div class="onboarding-header">
-                    <div class="onboarding-logo">⚖️</div>
+                    <div class="onboarding-logo"><img src="/static/logo-fungolaw.svg" alt="FunGoLaw"></div>
                     <h2>Chào mừng đến với AI Legal Agent!</h2>
                     <p>Hoàn thành các bước sau để bắt đầu</p>
                 </div>
@@ -2987,7 +2988,7 @@ console.log(await resp.json());</code></pre>
             currentSessionId = null;
             document.getElementById('chatMessages').innerHTML = `
                 <div class="chat-welcome" id="chatWelcome">
-                    <div class="welcome-icon">⚖️</div>
+                    <div class="welcome-icon"><img src="/static/logo-fungolaw.svg" alt="FunGoLaw" style="height:40px;width:auto;"></div>
                     <div class="welcome-greeting">Xin chào! 👋</div>
                     <div class="welcome-text">Tôi có thể giúp bạn tra cứu luật, rà soát hợp đồng, soạn văn bản pháp lý.</div>
                     <div class="suggestion-chips">

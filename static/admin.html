@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - Legal AI Platform</title>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -88,14 +89,14 @@
         }
 
         .sidebar-logo .logo-icon {
-            width: 36px;
             height: 36px;
-            background: linear-gradient(135deg, var(--primary), var(--violet));
-            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.1rem;
+        }
+        .sidebar-logo .logo-icon img {
+            height: 100%;
+            width: auto;
         }
 
         .sidebar-subtitle {
@@ -915,8 +916,7 @@
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <div class="sidebar-logo">
-                    <div class="logo-icon">⚖️</div>
-                    Legal AI
+                    <div class="logo-icon"><img src="/static/logo-fungolaw.svg" alt="FunGoLaw"></div>
                 </div>
                 <div class="sidebar-subtitle">Admin Dashboard</div>
             </div>
